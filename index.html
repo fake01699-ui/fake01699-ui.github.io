@@ -1,0 +1,734 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' blob:; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#EDEFF6">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Zyklus">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-180.png">
+<title>Zyklus</title>
+<style>
+:root{
+  --ground:#EDEFF6; --card:#fff; --ink:#1B2350; --soft:#535A80; --rule:#D3D8E8;
+  --bleed:#C8234A; --bleed-d:#9E1638; --bleed-l:#F5B8C6; --spot:#FBE3E8;
+  --fert:#6236D1; --fert-l:#E6DFFA;
+  --serif:ui-serif,"New York","Iowan Old Style",Georgia,serif;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --top:env(safe-area-inset-top,0px); --bot:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--ground);color:var(--ink);font:17px/1.45 var(--sans)}
+h1,h2,h3,p{margin:0}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer;background:none;border:0;padding:0}
+:focus-visible{outline:3px solid var(--fert);outline-offset:2px}
+[hidden]{display:none!important}
+
+.wrap{max-width:560px;margin:0 auto;padding:calc(var(--top) + 14px) 20px calc(var(--bot) + 96px)}
+.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.top h1{font:600 21px var(--serif)}
+.link{color:var(--soft);text-decoration:underline;text-underline-offset:3px;min-height:44px;padding:0 2px}
+.muted{color:var(--soft)}
+.small{font-size:15px}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:50px;padding:0 18px;border-radius:10px;font-weight:600;background:var(--ink);color:#fff;text-align:center}
+.btn.line{background:none;color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--ink)}
+.btn.bleed{background:var(--bleed);color:#fff}
+.btn.danger{background:none;color:var(--bleed-d);box-shadow:inset 0 0 0 1.5px var(--bleed-d)}
+.btn.full{width:100%}
+.btn[disabled]{opacity:.55}
+.row{display:flex;gap:10px}
+.row>*{flex:1}
+
+/* Heute */
+.hero{display:grid;grid-template-columns:auto 1fr;gap:18px;align-items:end;margin:6px 0 22px}
+.num{font:400 124px/.82 var(--serif);letter-spacing:-.04em}
+.num small{display:block;font:15px/1 var(--sans);letter-spacing:0;color:var(--soft);margin-bottom:12px}
+.hero h2{font:600 26px/1.15 var(--serif)}
+.hero.fert h2{color:var(--fert)}
+.hero p{margin-top:6px;font-size:15px;color:var(--soft)}
+.ribbon{margin:0 -20px 22px;background:var(--card);overflow-x:auto;-webkit-overflow-scrolling:touch;padding:12px 0 10px;scrollbar-width:none}
+.ribbon::-webkit-scrollbar{display:none}
+.rib{position:relative;padding:0 12px;width:max-content}
+.rib svg.curve{display:block;height:58px}
+.rib .days{display:flex}
+.rd{width:42px;display:flex;flex-direction:column;align-items:center;gap:5px;min-height:62px}
+.dot{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-variant-numeric:tabular-nums}
+.f-leicht{background:var(--bleed-l)}
+.f-mittel{background:var(--bleed);color:#fff}
+.f-stark{background:var(--bleed-d);color:#fff}
+.f-spot{background:var(--spot)}
+.fertd{background:var(--fert);color:#fff}
+.plan{box-shadow:inset 0 0 0 1.5px var(--fert)}
+.pred{box-shadow:inset 0 0 0 1.5px var(--bleed);border-radius:50%;}
+.now{outline:2.5px solid var(--ink);outline-offset:2px}
+.strip{display:block;width:13px;height:24px}
+.gap{height:24px;display:block}
+.acts{display:flex;gap:10px;margin-bottom:12px}
+.acts .btn{flex:1;padding:0 8px;font-size:16px}
+.section{border-top:1px solid var(--rule);padding:16px 0;margin-top:6px}
+.section h3{font:600 19px var(--serif);margin-bottom:8px}
+.today-list{list-style:none;margin:0;padding:0}
+.today-list li{padding:3px 0}
+
+/* Kalender */
+.mon{display:flex;align-items:center;justify-content:space-between;margin:2px 0 12px}
+.mon h2{font:600 24px var(--serif)}
+.nav{width:48px;height:48px;font-size:24px;border-radius:50%}
+.grid{display:grid;grid-template-columns:repeat(7,1fr);row-gap:4px}
+.wd{text-align:center;font-size:13px;color:var(--soft);padding-bottom:4px}
+.cell{display:flex;flex-direction:column;align-items:center;gap:3px;min-height:68px;padding-top:3px}
+.cell .strip,.cell .gap{height:20px;width:11px}
+.cell.other{visibility:hidden}
+.legend{list-style:none;margin:14px 0 0;padding:14px 0 0;border-top:1px solid var(--rule);display:grid;grid-template-columns:1fr 1fr;gap:9px 12px;font-size:14px}
+.legend li{display:flex;align-items:center;gap:8px}
+.legend .dot{width:20px;height:20px;flex:none}
+.legend .strip{height:20px;width:11px;flex:none}
+
+/* Tests */
+.cyc{font:600 19px var(--serif);margin:20px 0 8px}
+.t{display:block;width:100%;text-align:left;border-top:1px solid var(--rule);padding:12px 0}
+.t img{display:block;width:100%;height:96px;object-fit:cover;border-radius:6px;background:var(--rule);margin-bottom:8px}
+.t .m{display:flex;gap:10px;align-items:center}
+.t .m .strip{flex:none}
+.t b.positiv{color:var(--fert)}
+
+/* Verlauf */
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:4px 0 18px}
+.stats b{display:block;font:400 44px/1 var(--serif)}
+.stats span{font-size:14px;color:var(--soft)}
+.cy{padding:10px 0;border-top:1px solid var(--rule)}
+.cy .h{display:flex;justify-content:space-between;font-size:16px;margin-bottom:6px}
+.bar{position:relative;height:12px;background:var(--rule);border-radius:3px;overflow:hidden}
+.bar i{position:absolute;top:0;bottom:0;background:var(--bleed)}
+.bar i.p{background:var(--fert)}
+.st{display:block;width:100%;text-align:left;padding:13px 0;border-top:1px solid var(--rule);min-height:50px}
+.st small{display:block;color:var(--soft);font-size:14px}
+label.f,div.f{display:block;margin-bottom:16px}
+.f>span,.lab{display:block;font-weight:600;margin-bottom:6px}
+input[type=password],input[type=text],input[type=date],input[type=time],input[type=number],select,textarea{width:100%;min-height:50px;border:1.5px solid var(--rule);border-radius:10px;background:#fff;padding:11px 12px;font-size:17px;-webkit-appearance:none;appearance:none}
+textarea{min-height:88px;resize:vertical}
+
+/* Sperre */
+.gate{min-height:100dvh;background:var(--ink);color:#fff;padding:calc(var(--top) + 44px) 24px calc(var(--bot) + 32px)}
+.gate .in{max-width:420px;margin:0 auto}
+.gate h1{font:400 58px/1 var(--serif);letter-spacing:-.02em;margin:22px 0 10px}
+.gate p{color:#C6CBE3;margin-bottom:20px}
+.gate .f>span{color:#fff}
+.gate input[type=password]{border-color:transparent;color:var(--ink)}
+.gate .btn{background:#fff;color:var(--ink)}
+.gate .btn.line{background:none;color:#fff;box-shadow:inset 0 0 0 1.5px #fff}
+.gate .link{color:#C6CBE3}
+.gate ol{padding-left:22px;margin:0 0 22px}
+.gate li{margin-bottom:8px}
+.bigstrip{display:block;width:210px;height:62px}
+.check{display:flex;gap:10px;align-items:flex-start;margin-bottom:18px;font-size:15px}
+.check input{width:22px;height:22px;flex:none;margin:1px 0 0}
+.err{color:var(--bleed-d);font-weight:600;margin-bottom:12px}
+.gate .err{color:#FFC2CF}
+
+/* Tabs */
+.tabs{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--rule);display:flex;justify-content:center;padding-bottom:var(--bot);z-index:5}
+.tabs button{flex:1;max-width:140px;height:58px;font-size:16px;color:var(--soft)}
+.tabs button[aria-current=page]{color:var(--ink);font-weight:700;box-shadow:inset 0 3px 0 var(--ink)}
+
+/* Blatt */
+.back{position:fixed;inset:0;background:rgba(27,35,80,.45);z-index:10}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:11;background:var(--ground);border-radius:18px 18px 0 0;max-height:93dvh;overflow:auto;padding:18px 20px calc(var(--bot) + 24px);max-width:600px;margin:0 auto;animation:up .2s ease-out}
+@keyframes up{from{transform:translateY(24px);opacity:.6}}
+.sh{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:14px}
+.sh h2{font:600 24px/1.15 var(--serif)}
+.seg{display:flex;flex-wrap:wrap;gap:8px}
+.seg button{min-height:44px;padding:0 14px;border-radius:22px;background:#fff;box-shadow:inset 0 0 0 1.5px var(--rule);font-size:16px}
+.seg button[aria-pressed=true]{background:var(--ink);color:#fff;box-shadow:none}
+.seg.flow button[aria-pressed=true]{background:var(--bleed)}
+.res{display:grid;gap:8px}
+.res button{display:flex;gap:12px;align-items:center;text-align:left;background:#fff;border-radius:10px;padding:10px 12px;box-shadow:inset 0 0 0 1.5px var(--rule)}
+.res button[aria-pressed=true]{box-shadow:inset 0 0 0 2.5px var(--ink)}
+.res .strip{flex:none;height:34px;width:18px}
+.res small{display:block;color:var(--soft);font-size:14px;line-height:1.3}
+.prev{display:block;width:100%;max-height:240px;object-fit:contain;background:var(--rule);border-radius:8px;margin-bottom:8px}
+.dtest{display:flex;gap:10px;align-items:center;width:100%;text-align:left;padding:10px 0;border-top:1px solid var(--rule)}
+.light{position:fixed;inset:0;background:#000;z-index:20;display:flex;align-items:center;justify-content:center}
+.light img{max-width:100%;max-height:100%}
+.timer{position:fixed;left:0;right:0;top:0;z-index:30;background:var(--fert);color:#fff;padding:calc(var(--top) + 8px) 16px 8px;display:flex;align-items:center;gap:12px;font-size:16px}
+.timer b{flex:1;font-variant-numeric:tabular-nums}
+.timer button{color:#fff;text-decoration:underline;min-height:40px}
+@media (prefers-reduced-motion:reduce){.sheet{animation:none}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="sheet"></div>
+<div id="timer"></div>
+<noscript>Diese Seite braucht JavaScript.</noscript>
+<script>
+'use strict';
+/* ---------- Grundlagen ---------- */
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const $=(s,r=document)=>r.querySelector(s);
+const pad=n=>String(n).padStart(2,'0');
+const num=s=>{const[y,m,d]=s.split('-').map(Number);return Date.UTC(y,m-1,d)/864e5};
+const str=n=>new Date(n*864e5).toISOString().slice(0,10);
+const todayS=()=>{const d=new Date();return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())};
+const nowTime=()=>{const d=new Date();return pad(d.getHours())+':'+pad(d.getMinutes())};
+const df=o=>new Intl.DateTimeFormat('de-DE',{timeZone:'UTC',...o});
+const fD=df({day:'numeric',month:'long'}), fS=df({day:'numeric',month:'short'}), fW=df({weekday:'long',day:'numeric',month:'long'}), fM=df({month:'long',year:'numeric'});
+const f=n=>fD.format(new Date(n*864e5)), fs=n=>fS.format(new Date(n*864e5));
+const FLOW={spot:'Schmierblutung',leicht:'Leicht',mittel:'Mittel',stark:'Stark'};
+const RES={positiv:'Positiv',negativ:'Negativ',ungueltig:'Ungültig'};
+const MUCUS=['Trocken','Klebrig','Cremig','Wässrig','Spinnbar'];
+const SYM=['Krämpfe','Kopfschmerzen','Brustspannen','Müde','Übelkeit','Unterleib zieht','Gute Laune','Gereizt','Traurig','Lust'];
+const ITER=600000;
+
+/* ---------- Speicher: alles liegt nur in diesem Browser ---------- */
+let dbP;
+function db(){return dbP||(dbP=new Promise((ok,no)=>{const r=indexedDB.open('zyklus',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>ok(r.result);r.onerror=()=>no(r.error)}))}
+async function tx(mode,fn){const d=await db();return new Promise((ok,no)=>{const t=d.transaction('kv',mode),s=t.objectStore('kv');let out;const r=fn(s);if(r)r.onsuccess=()=>out=r.result;t.oncomplete=()=>ok(out);t.onerror=t.onabort=()=>no(t.error)})}
+const get=k=>tx('readonly',s=>s.get(k));
+const put=(k,v)=>tx('readwrite',s=>s.put(v,k));
+const del=k=>tx('readwrite',s=>s.delete(k));
+const keys=()=>tx('readonly',s=>s.getAllKeys());
+const wipeDb=()=>tx('readwrite',s=>s.clear());
+
+/* ---------- Verschlüsselung: AES-256-GCM, Schlüssel aus dem Passwort ---------- */
+const te=new TextEncoder(), td=new TextDecoder();
+const rnd=n=>crypto.getRandomValues(new Uint8Array(n));
+async function kek(pw,salt,iter){
+  const base=await crypto.subtle.importKey('raw',te.encode(pw),'PBKDF2',false,['deriveKey']);
+  return crypto.subtle.deriveKey({name:'PBKDF2',hash:'SHA-256',salt,iterations:iter},base,{name:'AES-GCM',length:256},false,['wrapKey','unwrapKey']);
+}
+async function wrap(dek,pw){
+  const salt=rnd(16),iv=rnd(12),k=await kek(pw,salt,ITER);
+  return {v:1,salt,iter:ITER,iv,wrapped:new Uint8Array(await crypto.subtle.wrapKey('raw',dek,k,{name:'AES-GCM',iv}))};
+}
+async function unwrap(m,pw,extractable=false){
+  const k=await kek(pw,m.salt,m.iter);
+  return crypto.subtle.unwrapKey('raw',m.wrapped,k,{name:'AES-GCM',iv:m.iv},'AES-GCM',extractable,['encrypt','decrypt']);
+}
+async function enc(k,bytes){const iv=rnd(12);return {iv,ct:new Uint8Array(await crypto.subtle.encrypt({name:'AES-GCM',iv},k,bytes))}}
+const dec=(k,b)=>crypto.subtle.decrypt({name:'AES-GCM',iv:b.iv},k,b.ct);
+
+/* ---------- Sitzung ---------- */
+let KEY=null,S=null,tab='heute',vy,vm,SHEET=null,TF=null,photoCache=new Map(),saveChain=Promise.resolve(),saveT=null,bk=null;
+const blank=()=>({v:1,settings:{cycleLen:null},days:{},tests:[],lastBackup:null});
+function persist(){
+  clearTimeout(saveT);saveT=null;
+  const k=KEY,snap=JSON.stringify(S);
+  saveChain=saveChain.then(async()=>put('state',await enc(k,te.encode(snap)))).catch(e=>toastErr(e));
+  return saveChain;
+}
+function persistSoon(){clearTimeout(saveT);saveT=setTimeout(persist,400)}
+function toastErr(e){console.error(e);alert('Speichern hat nicht geklappt. Prüfe, ob auf dem Handy noch Speicherplatz frei ist.')}
+async function loadState(){const b=await get('state');S=b?Object.assign(blank(),JSON.parse(td.decode(await dec(KEY,b)))):blank()}
+async function lock(){
+  if(saveT)persist();
+  await saveChain;
+  KEY=null;S=null;TF=null;SHEET=null;bk=null;
+  photoCache.forEach(u=>URL.revokeObjectURL(u));photoCache.clear();
+  $('#sheet').innerHTML='';tab='heute';
+  renderLogin();
+}
+let lastActive=Date.now(),hiddenAt=null,pickerUntil=0;
+const picking=()=>Date.now()<pickerUntil;
+['pointerdown','keydown','input'].forEach(e=>addEventListener(e,()=>lastActive=Date.now(),{passive:true}));
+setInterval(()=>{if(KEY&&!picking()&&Date.now()-lastActive>5*6e4)lock()},15000);
+document.addEventListener('visibilitychange',()=>{
+  if(document.hidden){hiddenAt=Date.now();if(KEY&&saveT)persist();return}
+  if(KEY&&!picking()&&hiddenAt&&Date.now()-hiddenAt>2*6e4)lock();
+  else if(KEY&&!SHEET)renderApp();
+});
+
+/* ---------- Auswertung ---------- */
+const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
+const testStart=L=>L==null?5:clamp(L,21,40)-16; // Tabelle der Anleitung: 21 Tage = Tag 5 ... 40 Tage = Tag 24
+function model(){
+  const T=num(todayS());
+  const flows=Object.entries(S.days).filter(([,d])=>['leicht','mittel','stark'].includes(d.flow)).map(([k])=>num(k)).sort((a,b)=>a-b);
+  const starts=[];let prev=null;
+  for(const d of flows){if(prev===null||(d-prev>2&&d-starts[starts.length-1]>=14))starts.push(d);prev=d}
+  const tests=S.tests.map(t=>({...t,n:num(t.date)}));
+  const cycles=starts.map((s,i)=>{
+    const end=i<starts.length-1?starts[i+1]-1:null,upto=end??Infinity;
+    const fl=flows.filter(d=>d>=s&&d<=upto&&d-s<12);
+    const pos=tests.filter(t=>t.result==='positiv'&&t.n>=s&&t.n<=upto).map(t=>t.n).sort((a,b)=>a-b)[0]??null;
+    return {start:s,end,len:end!=null?end-s+1:null,flows:fl,pos};
+  });
+  const done=cycles.filter(c=>c.len!=null&&c.len>=15&&c.len<=60).slice(-6);
+  const avg=a=>a.length?Math.round(a.reduce((x,y)=>x+y,0)/a.length):null;
+  const avgLen=avg(done.map(c=>c.len));
+  const L=avgLen??S.settings.cycleLen??null;
+  const avgBleed=avg(cycles.slice(0,-1).slice(-6).map(c=>c.flows.length).filter(n=>n>0));
+  const cur=cycles.filter(c=>c.start<=T).pop()||null;
+  let nextStart=null,planFrom=null,planEnd=null;
+  if(cur){
+    if(L)nextStart=cur.start+L;
+    planFrom=cur.start+testStart(L)-1;
+    planEnd=planFrom+9; if(nextStart!=null)planEnd=Math.min(planEnd,nextStart-1);
+  }
+  const fert=new Set();cycles.forEach(c=>{if(c.pos!=null)[0,1,2].forEach(i=>fert.add(c.pos+i))});
+  const pred=new Set();
+  if(nextStart!=null&&nextStart>T)for(let i=0;i<(avgBleed||5);i++)pred.add(nextStart+i);
+  const cycleOf=n=>cycles.filter(c=>c.start<=n&&(c.end==null||c.end>=n)).pop()||null;
+  return {T,cycles,cur,L,avgLen,avgBleed,nextStart,planFrom,planEnd,fert,pred,tests,cycleOf,done};
+}
+function bestResult(ts){for(const r of ['positiv','negativ','ungueltig'])if(ts.some(t=>t.result===r))return r;return null}
+function dayInfo(m,n){
+  const s=str(n),d=S.days[s]||{},ts=m.tests.filter(t=>t.n===n);
+  const c=m.cycleOf(n),cd=c?n-c.start+1:null;
+  let cl='';
+  if(d.flow&&d.flow!=='spot')cl='f-'+d.flow;
+  else if(d.flow==='spot')cl='f-spot';
+  else if(m.fert.has(n))cl='fertd';
+  else if(m.pred.has(n))cl='pred';
+  else if(m.cur&&m.cur.pos==null&&n>=m.T&&n>=m.planFrom&&n<=m.planEnd)cl='plan';
+  const lab=[f(n)];
+  if(cd)lab.push('Zyklustag '+cd);
+  if(d.flow)lab.push('Blutung: '+FLOW[d.flow]);
+  const r=bestResult(ts);
+  if(r)lab.push('Test '+RES[r]);
+  if(m.fert.has(n))lab.push('besonders fruchtbar');
+  if(m.pred.has(n))lab.push('Blutung erwartet');
+  if(cl==='plan')lab.push('Testtag');
+  return {s,d,ts,cd,cl,r,label:lab.join(', ')};
+}
+function statusOf(m){
+  const c=m.cur;if(!c)return null;
+  const T=m.T,ts=testStart(m.L),today=m.tests.filter(t=>t.n===T),r=bestResult(today);
+  const when='Am besten zwischen 10 und 20 Uhr, nicht mit dem ersten Morgenurin. Etwa 2 Stunden vorher wenig trinken.';
+  if(c.pos!=null&&T<=c.pos+2){
+    if(T===c.pos)return{h:'Test positiv',d:`Eisprung wahrscheinlich in 24 bis 48 Stunden, also am ${f(T+1)} oder ${f(T+2)}.`,fert:1};
+    return{h:'Besonders fruchtbare Tage',d:`Dein Test war am ${f(c.pos)} positiv. Eisprung wahrscheinlich am ${f(c.pos+1)} oder ${f(c.pos+2)}.`,fert:1};
+  }
+  if(m.nextStart!=null&&T>=m.nextStart){
+    const o=T-m.nextStart;
+    return{h:o?`Blutung seit ${o} ${o===1?'Tag':'Tagen'} erwartet`:'Blutung heute erwartet',d:'Trag sie ein, sobald sie beginnt. Dann startet der nächste Zyklus.'};
+  }
+  if(c.pos!=null)return{h:m.nextStart!=null?`Nächste Blutung etwa am ${f(m.nextStart)}`:'Test war positiv',d:`Positiver Test am ${f(c.pos)}.`};
+  if(T<m.planFrom)return{h:`Test ab ${f(m.planFrom)}`,d:m.L?`Das ist Zyklustag ${ts}, passend zu ${m.L} Tagen Zykluslänge.`:'Deine Zykluslänge ist noch unbekannt, deshalb startest du an Zyklustag 5.'};
+  if(T<=m.planEnd){
+    if(r==='negativ')return{h:'Heute negativ',d:'Morgen weiter testen, bis der Test positiv ist.'};
+    if(r==='ungueltig')return{h:'Test ungültig',d:'Wiederhole ihn mit einem neuen Streifen.'};
+    return{h:'Heute testen',d:when};
+  }
+  return{h:'Noch kein positiver Test',d:m.nextStart!=null?`Nächste Blutung etwa am ${f(m.nextStart)}.`:'Trag die nächste Blutung ein, sobald sie beginnt.'};
+}
+
+/* ---------- Bausteine ---------- */
+function strip(r){
+  const ctl=r==='ungueltig'?'':'<rect x="3.5" y="8" width="7" height="2.6" fill="#1B2350"/>';
+  const t=r==='positiv'?'<rect x="3.5" y="15" width="7" height="2.6" fill="#6236D1"/>':r==='negativ'?'<rect x="3.5" y="15" width="7" height="2.6" fill="#6236D1" opacity=".22"/>':'';
+  return `<svg class="strip" viewBox="0 0 14 26" aria-hidden="true"><rect x=".75" y=".75" width="12.5" height="24.5" rx="3" fill="#fff" stroke="#1B2350" stroke-width="1.5"/>${ctl}${t}</svg>`;
+}
+const mark=i=>i.r?strip(i.r):'<span class="gap"></span>';
+function curve(m,c,days){
+  const w=42,pts=[];
+  for(let i=0;i<days;i++){const r=bestResult(m.tests.filter(t=>t.n===c.start+i));if(r==='positiv'||r==='negativ')pts.push([i*w+21,r==='positiv'?10:48,r])}
+  const W=days*w;
+  if(pts.length<1)return '';
+  let p=`M${pts[0][0]} ${pts[0][1]}`;
+  for(let i=1;i<pts.length;i++){const[a,b]=pts[i-1],[x,y]=pts[i],h=(x-a)/2;p+=` C${a+h} ${b} ${x-h} ${y} ${x} ${y}`}
+  const dots=pts.map(([x,y,r])=>`<circle cx="${x}" cy="${y}" r="4" fill="${r==='positiv'?'#6236D1':'#fff'}" stroke="#6236D1" stroke-width="2"/>`).join('');
+  return `<svg class="curve" width="${W}" viewBox="0 0 ${W} 58" aria-hidden="true"><path d="${p}" fill="none" stroke="#6236D1" stroke-width="2"/>${dots}</svg>`;
+}
+const page=(body,action='')=>`<div class="wrap"><div class="top"><h1>${action||'Zyklus'}</h1><button class="link" data-a="lock">Sperren</button></div>${body}</div>
+<nav class="tabs" aria-label="Bereiche">${[['heute','Heute'],['kal','Kalender'],['tests','Tests'],['verlauf','Verlauf']].map(([k,l])=>`<button data-a="tab" data-v="${k}" ${tab===k?'aria-current="page"':''}>${l}</button>`).join('')}</nav>`;
+
+/* ---------- Ansichten ---------- */
+function renderApp(){
+  const m=model();
+  const v={heute:vHeute,kal:vKal,tests:vTests,verlauf:vVerlauf}[tab](m);
+  const scroll=window.scrollY;
+  $('#app').innerHTML=v;
+  hydrate($('#app'));
+  const n=$('#ribbon .now');
+  if(n){const r=$('#ribbon');r.scrollLeft=n.closest('.rd').offsetLeft-r.clientWidth/2+21}
+  window.scrollTo(0,scroll);
+}
+function vHeute(m){
+  const t=todayS(),c=m.cur;
+  if(!c)return page(`<div class="hero" style="display:block"><h2>Wann begann deine letzte Blutung?</h2><p>Sobald der erste Tag eingetragen ist, rechne ich deine Testtage aus.</p></div>
+    <button class="btn full" data-a="first">Erste Blutung eintragen</button>${timerBtn()}`);
+  const st=statusOf(m),cd=m.T-c.start+1;
+  const n=Math.max(m.L||28,cd+3);
+  let days='';
+  for(let i=0;i<n;i++){const k=c.start+i,inf=dayInfo(m,k);
+    days+=`<button class="rd" data-a="day" data-v="${inf.s}" aria-label="${esc(inf.label)}"><span class="dot ${inf.cl} ${k===m.T?'now':''}">${i+1}</span>${mark(inf)}</button>`}
+  const dd=S.days[t]||{},list=[];
+  if(dd.flow)list.push('Blutung: '+FLOW[dd.flow]);
+  m.tests.filter(x=>x.n===m.T).forEach(x=>list.push(`Test ${x.time||''}: ${RES[x.result]}`));
+  if(dd.mucus)list.push('Zervixschleim: '+dd.mucus);
+  if(dd.temp)list.push('Temperatur: '+String(dd.temp).replace('.',',')+' °C');
+  if((dd.symptoms||[]).length)list.push(dd.symptoms.join(', '));
+  return page(`<div class="hero ${st.fert?'fert':''}"><div class="num"><small>Zyklustag</small>${cd}</div><div><h2>${esc(st.h)}</h2><p>${esc(st.d)}</p></div></div>
+  <div class="ribbon" id="ribbon"><div class="rib">${curve(m,c,n)}<div class="days">${days}</div></div></div>
+  <div class="acts"><button class="btn" data-a="newtest" data-v="${t}">Test eintragen</button><button class="btn line" data-a="day" data-v="${t}">Blutung eintragen</button></div>
+  ${timerBtn()}
+  ${list.length?`<div class="section"><h3>Heute</h3><ul class="today-list">${list.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>`:''}
+  ${m.nextStart!=null&&m.nextStart>m.T?`<div class="section small muted">Nächste Blutung etwa am ${f(m.nextStart)}. ${m.avgLen?`Gerechnet mit deinem Durchschnitt von ${m.avgLen} Tagen.`:`Gerechnet mit ${m.L} Tagen.`}</div>`:''}`);
+}
+const timerBtn=()=>`<button class="btn line full" data-a="timer" ${tEnd?'disabled':''}>5-Minuten-Timer zum Ablesen</button>`;
+function vKal(m){
+  if(vy==null){const d=new Date();vy=d.getFullYear();vm=d.getMonth()}
+  const first=Date.UTC(vy,vm,1)/864e5,dim=new Date(Date.UTC(vy,vm+1,0)).getUTCDate();
+  const lead=(new Date(first*864e5).getUTCDay()+6)%7;
+  let cells=['Mo','Di','Mi','Do','Fr','Sa','So'].map(d=>`<div class="wd">${d}</div>`).join('');
+  for(let i=0;i<lead;i++)cells+='<div class="cell other"></div>';
+  for(let i=0;i<dim;i++){const n=first+i,inf=dayInfo(m,n);
+    cells+=`<button class="cell" data-a="day" data-v="${inf.s}" aria-label="${esc(inf.label)}"><span class="dot ${inf.cl} ${n===m.T?'now':''}">${i+1}</span>${mark(inf)}</button>`}
+  return page(`<div class="mon"><button class="nav" data-a="mon" data-v="-1" aria-label="Vorheriger Monat">‹</button><h2>${fM.format(new Date(first*864e5))}</h2><button class="nav" data-a="mon" data-v="1" aria-label="Nächster Monat">›</button></div>
+  <div class="grid">${cells}</div>
+  <ul class="legend">
+   <li><span class="dot f-mittel"></span>Blutung</li><li><span class="dot pred"></span>Blutung erwartet</li>
+   <li><span class="dot plan"></span>Testtag</li><li><span class="dot fertd"></span>Besonders fruchtbar</li>
+   <li>${strip('positiv')}Test positiv</li><li>${strip('negativ')}Test negativ</li>
+  </ul>`);
+}
+function vTests(m){
+  const all=m.tests.slice().sort((a,b)=>(b.date+(b.time||'')).localeCompare(a.date+(a.time||'')));
+  let body=`<button class="btn full" data-a="newtest" data-v="${todayS()}">Test eintragen</button>`;
+  if(!all.length)return page(body+`<p class="muted" style="margin-top:16px">Hier siehst du später alle Teststreifen untereinander. Fotografier sie immer quer und bei gutem Licht, dann kannst du sie leicht vergleichen.</p>`);
+  body+=`<p class="muted small" style="margin-top:12px">Entscheidend ist immer der Vergleich mit der Kontrolllinie auf demselben Streifen.</p>`;
+  let last='x';
+  for(const t of all){const c=m.cycleOf(t.n),g=c?c.start:'none';
+    if(g!==last){body+=`<h3 class="cyc">${c?'Zyklus ab '+f(c.start):'Ohne Zyklus'}</h3>`;last=g}
+    body+=`<button class="t" data-a="edittest" data-v="${esc(t.id)}">${t.photo?`<img data-photo="${esc(t.photo)}" alt="Foto vom Teststreifen">`:''}
+      <span class="m">${strip(t.result)}<span><b class="${t.result}">${RES[t.result]}</b> ${esc(fs(t.n))}${t.time?', '+esc(t.time)+' Uhr':''}${c?`<br><span class="muted small">Zyklustag ${t.n-c.start+1}</span>`:''}${t.note?`<br><span class="muted small">${esc(t.note)}</span>`:''}</span></span></button>`}
+  return page(body);
+}
+function vVerlauf(m){
+  const cs=m.cycles.slice().reverse();
+  const posDays=m.cycles.filter(c=>c.pos!=null).map(c=>c.pos-c.start+1);
+  const avgPos=posDays.length?Math.round(posDays.reduce((a,b)=>a+b,0)/posDays.length):null;
+  let body=m.done.length?`<div class="stats"><div><b>${m.avgLen}</b><span>Tage Zyklus im Schnitt</span></div><div><b>${m.avgBleed??'–'}</b><span>Tage Blutung im Schnitt</span></div><div><b>${avgPos??'–'}</b><span>Zyklustag des positiven Tests</span></div></div>`:`<p class="muted" style="margin-bottom:16px">Nach dem ersten vollständigen Zyklus siehst du hier deine Durchschnittswerte.</p>`;
+  const max=Math.max(40,...m.cycles.map(c=>c.len||m.T-c.start+1));
+  for(const c of cs){const l=c.len??(m.T-c.start+1),pc=d=>(d/max*100).toFixed(2)+'%';
+    const bl=c.flows.map(d=>`<i style="left:${pc(d-c.start)};width:${pc(1)}"></i>`).join('');
+    const p=c.pos!=null?`<i class="p" style="left:${pc(c.pos-c.start)};width:${pc(1)}"></i>`:'';
+    body+=`<div class="cy"><div class="h"><span>${fs(c.start)}${c.end!=null?' bis '+fs(c.end):', läuft'}</span><span>${l} ${l===1?'Tag':'Tage'}</span></div><div class="bar" style="width:${pc(l)}"></div><div class="bar" style="margin-top:-12px;background:none">${bl}${p}</div></div>`}
+  const days=S.lastBackup?Math.floor(m.T-num(S.lastBackup)):null;
+  body+=`<h3 class="cyc" style="margin-top:28px">Einstellungen</h3>
+  <label class="f"><span>Übliche Zykluslänge</span><select data-i="cycleLen"><option value="">Weiß ich nicht</option>${Array.from({length:20},(_,i)=>21+i).map(n=>`<option value="${n}" ${S.settings.cycleLen===n?'selected':''}>${n} Tage</option>`).join('')}</select>${m.avgLen?`<small class="muted">Wird nicht mehr gebraucht, weil dein eigener Durchschnitt da ist.</small>`:''}</label>
+  <button class="st" data-a="backup">Backup erstellen<small>${days==null?'Noch kein Backup gemacht':days===0?'Letztes Backup heute':`Letztes Backup vor ${days} ${days===1?'Tag':'Tagen'}`}</small></button>
+  <button class="st" data-a="restore">Backup wiederherstellen</button>
+  <button class="st" data-a="pw">Passwort ändern</button>
+  <button class="st" data-a="help">Hinweise aus der Testanleitung</button>
+  <button class="st" data-a="wipe" style="color:var(--bleed-d)">Alle Daten löschen</button>`;
+  return page(body);
+}
+
+/* ---------- Blätter ---------- */
+function openSheet(s){SHEET=s;renderSheet(true)}
+function closeSheet(){SHEET=null;TF=null;$('#sheet').innerHTML='';if(KEY)renderApp()}
+function renderSheet(fresh){
+  const old=$('#sheet .sheet'),top=old?old.scrollTop:0;
+  const html={day:shDay,test:shTest,backup:shBackup,restore:shRestore,pw:shPw,wipe:shWipe,help:shHelp,first:shFirst}[SHEET.t](SHEET);
+  $('#sheet').innerHTML=`<div class="back" data-a="close"></div><div class="sheet" role="dialog" aria-modal="true" style="${fresh?'':'animation:none'}">${html}</div>`;
+  $('#sheet .sheet').scrollTop=top;
+  hydrate($('#sheet'));
+}
+const head=(t,sub)=>`<div class="sh"><div><h2>${esc(t)}</h2>${sub?`<p class="muted small">${esc(sub)}</p>`:''}</div><button class="link" data-a="close">Fertig</button></div>`;
+function dayOf(s){return S.days[s]||(S.days[s]={})}
+function prune(s){const d=S.days[s];if(d&&!d.flow&&!d.mucus&&!d.temp&&!d.sex&&!d.note&&!(d.symptoms||[]).length)delete S.days[s]}
+function seg(list,cur,a,cls=''){return `<div class="seg ${cls}">${list.map(([v,l])=>`<button type="button" data-a="${a}" data-v="${esc(v)}" aria-pressed="${cur===v}">${esc(l)}</button>`).join('')}</div>`}
+function shDay({date}){
+  const n=num(date),m=model(),c=m.cycleOf(n),d=S.days[date]||{};
+  const title=fW.format(new Date(n*864e5));
+  if(n>m.T){const notes=[];if(m.pred.has(n))notes.push('An diesem Tag wird deine Blutung erwartet.');if(m.cur&&m.cur.pos==null&&n>=m.planFrom&&n<=m.planEnd)notes.push('Das ist ein Testtag.');
+    return head(title)+`<p class="muted">${notes.join(' ')||'Dieser Tag liegt in der Zukunft.'} Eintragen kannst du ihn, wenn es so weit ist.</p>`}
+  const ts=m.tests.filter(t=>t.n===n);
+  return head(title,c?'Zyklustag '+(n-c.start+1):'')+
+  `<div class="f"><span class="lab">Blutung</span>${seg([['','Keine'],...Object.entries(FLOW)],d.flow||'','flow','flow')}</div>
+  <div class="f"><span class="lab">Ovulationstest</span>
+   ${ts.map(t=>`<button class="dtest" data-a="edittest" data-v="${esc(t.id)}">${strip(t.result)}<span>${RES[t.result]}${t.time?', '+esc(t.time)+' Uhr':''}${t.photo?', mit Foto':''}</span></button>`).join('')}
+   <button class="btn line full" style="margin-top:6px" data-a="newtest" data-v="${date}">Test hinzufügen</button></div>
+  <div class="f"><span class="lab">Zervixschleim</span>${seg(MUCUS.map(x=>[x,x]),d.mucus||'','mucus')}</div>
+  <div class="f"><span class="lab">Beschwerden und Stimmung</span><div class="seg">${SYM.map(x=>`<button type="button" data-a="sym" data-v="${esc(x)}" aria-pressed="${(d.symptoms||[]).includes(x)}">${esc(x)}</button>`).join('')}</div></div>
+  <div class="f"><span class="lab">Sex</span>${seg([['','Nein'],['1','Ja']],d.sex?'1':'','sex')}</div>
+  <label class="f"><span>Basaltemperatur in °C</span><input type="number" inputmode="decimal" step="0.01" min="34" max="42" data-i="temp" value="${esc(d.temp||'')}"></label>
+  <label class="f"><span>Notiz</span><textarea data-i="note">${esc(d.note||'')}</textarea></label>`;
+}
+function shTest(){
+  const t=TF;
+  const opts=[['positiv','Positiv','Testlinie genauso dunkel oder dunkler als die Kontrolllinie'],['negativ','Negativ','Nur Kontrolllinie, oder Testlinie heller als die Kontrolllinie'],['ungueltig','Ungültig','Keine Linie, oder nur eine Testlinie']];
+  return head(t.id?'Test bearbeiten':'Test eintragen')+
+  `<form data-f="test" novalidate>
+   <div class="row"><label class="f"><span>Tag</span><input type="date" max="${todayS()}" data-i="tf-date" value="${esc(t.date)}"></label><label class="f"><span>Uhrzeit</span><input type="time" data-i="tf-time" value="${esc(t.time)}"></label></div>
+   <div class="f"><span class="lab">Ergebnis</span><div class="res">${opts.map(([v,l,h])=>`<button type="button" data-a="res" data-v="${v}" aria-pressed="${t.result===v}">${strip(v)}<span><b>${l}</b><small>${h}</small></span></button>`).join('')}</div></div>
+   <div class="f"><span class="lab">Foto vom Streifen</span>
+    ${t.preview?`<img class="prev" src="${t.preview}" alt="Vorschau">`:t.photo&&!t.remove?`<img class="prev" data-photo="${esc(t.photo)}" alt="Foto vom Teststreifen">`:''}
+    <div class="row"><label class="btn line" data-a="pick">${t.preview||(t.photo&&!t.remove)?'Foto ersetzen':'Foto aufnehmen oder wählen'}<input type="file" accept="image/*" id="pf" hidden></label>${t.preview||(t.photo&&!t.remove)?`<button type="button" class="btn line" data-a="rmphoto">Entfernen</button>`:''}</div>
+   </div>
+   <label class="f"><span>Notiz</span><input type="text" data-i="tf-note" value="${esc(t.note)}"></label>
+   ${t.err?`<p class="err" role="alert">${esc(t.err)}</p>`:''}
+   <button class="btn full" type="submit" ${t.busy?'disabled':''}>${t.busy?'Wird gespeichert':'Test speichern'}</button>
+   ${t.id?`<button type="button" class="btn danger full" style="margin-top:10px" data-a="deltest">${t.sure?'Wirklich löschen':'Test löschen'}</button>`:''}
+  </form>`;
+}
+function shBackup(){
+  return head('Backup erstellen')+`<p style="margin-bottom:14px">Das Backup enthält alles, auch die Fotos, und bleibt mit deinem Passwort verschlüsselt. Speicher es zum Beispiel in der Dateien-App oder in iCloud Drive.</p>
+  ${bk?`<button class="btn full" data-a="bkshare">Datei speichern oder teilen</button>`:`<button class="btn full" data-a="bkprep">Backup vorbereiten</button>`}`;
+}
+function shRestore(s){
+  return head('Backup wiederherstellen')+`<form data-f="restore" novalidate>
+  ${s.hasData?'<p style="margin-bottom:14px">Deine aktuellen Einträge auf diesem Gerät werden dabei ersetzt.</p>':''}
+  <label class="f"><span>Backup-Datei</span><input type="file" id="rf" accept=".json,application/json" data-a="pick"></label>
+  <label class="f"><span>Passwort des Backups</span><input type="password" id="rp" autocomplete="current-password"></label>
+  ${s.err?`<p class="err" role="alert">${esc(s.err)}</p>`:''}
+  <button class="btn full" type="submit" ${s.busy?'disabled':''}>${s.busy?'Wird wiederhergestellt':'Wiederherstellen'}</button></form>`;
+}
+function shPw(s){
+  return head('Passwort ändern')+`<form data-f="pw" novalidate>
+  <label class="f"><span>Aktuelles Passwort</span><input type="password" id="p0" autocomplete="current-password"></label>
+  <label class="f"><span>Neues Passwort, mindestens 8 Zeichen</span><input type="password" id="p1" autocomplete="new-password"></label>
+  <label class="f"><span>Neues Passwort wiederholen</span><input type="password" id="p2" autocomplete="new-password"></label>
+  ${s.err?`<p class="err" role="alert">${esc(s.err)}</p>`:''}${s.ok?`<p role="status" style="margin-bottom:12px"><b>Passwort geändert.</b> Ältere Backups öffnest du weiter mit dem alten Passwort.</p>`:''}
+  <button class="btn full" type="submit">Passwort ändern</button></form>`;
+}
+function shWipe(s){
+  return head('Alle Daten löschen')+`<form data-f="wipe" novalidate><p style="margin-bottom:14px">Alle Einträge, Fotos und das Passwort werden von diesem Gerät gelöscht. Das lässt sich nur mit einem Backup rückgängig machen.</p>
+  <label class="f"><span>Gib LÖSCHEN ein</span><input type="text" id="wc" autocapitalize="characters" autocomplete="off"></label>
+  ${s.err?`<p class="err" role="alert">${esc(s.err)}</p>`:''}
+  <button class="btn danger full" type="submit">Endgültig löschen</button></form>`;
+}
+function shHelp(){
+  const it=['Nicht zur Verhütung geeignet.','Testen: Streifen bis zur Max-Linie 5 bis 10 Sekunden eintauchen, flach hinlegen und nach 5 Minuten ablesen, nicht später.','Ein positiver Test bedeutet: Eisprung wahrscheinlich in den nächsten 24 bis 48 Stunden.','Am besten zwischen 10 und 20 Uhr testen, nicht mit dem ersten Morgenurin. Etwa 2 Stunden vorher wenig trinken.','Mindestens 5 Tage testen oder bis der Test positiv ist. Ist die Zykluslänge unbekannt, ab Zyklustag 5.','Bei unregelmäßigen oder ungewöhnlich langen Zyklen zum Arzt oder zur Ärztin gehen.','Manche Medikamente gegen Unfruchtbarkeit können das Ergebnis verfälschen.','Die Prognosen hier sind Schätzungen und keine Diagnose.'];
+  return head('Hinweise aus der Testanleitung')+`<ul style="padding-left:20px;margin:0">${it.map(x=>`<li style="margin-bottom:10px">${esc(x)}</li>`).join('')}</ul>`;
+}
+function shFirst(s){
+  return head('Dein Start')+`<form data-f="first" novalidate>
+  <label class="f"><span>Erster Tag deiner letzten Blutung</span><input type="date" id="fd" max="${todayS()}" value="${todayS()}"></label>
+  <label class="f"><span>Wie lang ist dein Zyklus meistens?</span><select id="fl"><option value="">Weiß ich nicht</option>${Array.from({length:20},(_,i)=>21+i).map(n=>`<option value="${n}" ${n===S.settings.cycleLen?'selected':''}>${n} Tage</option>`).join('')}</select></label>
+  <p class="muted small" style="margin-bottom:14px">Daraus ergibt sich dein erster Testtag. Diese Seite und der Test eignen sich nicht zur Verhütung.</p>
+  <button class="btn full" type="submit">Speichern</button></form>`;
+}
+
+/* ---------- Fotos ---------- */
+async function photoUrl(id){
+  if(photoCache.has(id))return photoCache.get(id);
+  const b=await get('photo:'+id);if(!b)return null;
+  const u=URL.createObjectURL(new Blob([await dec(KEY,b)],{type:'image/jpeg'}));
+  photoCache.set(id,u);return u;
+}
+function hydrate(r){r.querySelectorAll('img[data-photo]').forEach(async i=>{const u=await photoUrl(i.dataset.photo).catch(()=>null);if(u)i.src=u})}
+async function shrink(file){
+  const url=URL.createObjectURL(file);
+  try{
+    const img=new Image();img.src=url;await img.decode();
+    const k=Math.min(1,1600/Math.max(img.naturalWidth,img.naturalHeight));
+    const c=document.createElement('canvas');c.width=Math.round(img.naturalWidth*k);c.height=Math.round(img.naturalHeight*k);
+    c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+    return await new Promise((ok,no)=>c.toBlob(b=>b?ok(b):no(new Error('blob')),'image/jpeg',.85));
+  }finally{URL.revokeObjectURL(url)}
+}
+function dropPreview(){if(TF&&TF.preview){URL.revokeObjectURL(TF.preview);TF.preview=null;TF.blob=null}}
+async function removePhoto(id){await del('photo:'+id);const u=photoCache.get(id);if(u){URL.revokeObjectURL(u);photoCache.delete(id)}}
+
+/* ---------- Timer ---------- */
+let tEnd=null,tI=null;
+function drawTimer(){
+  const box=$('#timer');
+  if(!tEnd){box.innerHTML='';return}
+  const left=Math.ceil((tEnd-Date.now())/1000);
+  if(left>0){box.innerHTML=`<div class="timer" role="timer"><b>Noch ${Math.floor(left/60)}:${pad(left%60)} bis zum Ablesen</b><button data-a="tstop">Abbrechen</button></div>`;return}
+  if(tI){clearInterval(tI);tI=null;if(navigator.vibrate)navigator.vibrate([300,150,300])}
+  box.innerHTML=`<div class="timer" role="alert"><b>Jetzt ablesen, später zählt das Ergebnis nicht mehr.</b>${KEY?'<button data-a="tres">Eintragen</button>':''}<button data-a="tstop">Schließen</button></div>`;
+}
+function stopTimer(){tEnd=null;clearInterval(tI);tI=null;drawTimer();if(KEY&&!SHEET)renderApp()}
+
+/* ---------- Klicks und Eingaben ---------- */
+const A={
+  async lock(){await lock()},
+  tab(e){tab=e.dataset.v;window.scrollTo(0,0);renderApp()},
+  close(){if(SHEET&&SHEET.t==='test'){const b=TF&&TF.back;dropPreview();if(b){TF=null;openSheet({t:'day',date:b});return}}if(KEY&&SHEET&&SHEET.t==='day')persist();closeSheet()},
+  day(e){openSheet({t:'day',date:e.dataset.v})},
+  first(){openSheet({t:'first'})},
+  mon(e){vm+=+e.dataset.v;if(vm<0){vm=11;vy--}if(vm>11){vm=0;vy++}renderApp()},
+  flow(e){const d=dayOf(SHEET.date);d.flow=e.dataset.v;prune(SHEET.date);persist();renderSheet()},
+  mucus(e){const d=dayOf(SHEET.date);d.mucus=d.mucus===e.dataset.v?'':e.dataset.v;prune(SHEET.date);persist();renderSheet()},
+  sex(e){const d=dayOf(SHEET.date);d.sex=e.dataset.v==='1';prune(SHEET.date);persist();renderSheet()},
+  sym(e){const d=dayOf(SHEET.date),v=e.dataset.v,a=d.symptoms||(d.symptoms=[]),i=a.indexOf(v);i<0?a.push(v):a.splice(i,1);prune(SHEET.date);persist();renderSheet()},
+  newtest(e){const back=SHEET&&SHEET.t==='day'?SHEET.date:null;TF={id:null,date:e.dataset.v,time:nowTime(),result:null,photo:null,note:'',back};openSheet({t:'test'})},
+  edittest(e){const t=S.tests.find(x=>x.id===e.dataset.v);if(!t)return;const back=SHEET&&SHEET.t==='day'?SHEET.date:null;TF={id:t.id,date:t.date,time:t.time||'',result:t.result,photo:t.photo||null,note:t.note||'',back};openSheet({t:'test'})},
+  res(e){TF.result=e.dataset.v;TF.err='';renderSheet()},
+  pick(){pickerUntil=Date.now()+5*6e4},
+  rmphoto(){if(TF.preview)dropPreview();else TF.remove=true;renderSheet()},
+  async deltest(){if(!TF.sure){TF.sure=true;renderSheet();return}
+    const old=S.tests.find(x=>x.id===TF.id);S.tests=S.tests.filter(x=>x.id!==TF.id);if(old&&old.photo)await removePhoto(old.photo);await persist();A.close()},
+  timer(){tEnd=Date.now()+5*6e4;if(!tI)tI=setInterval(drawTimer,1000);drawTimer();if(KEY&&!SHEET)renderApp()},
+  tstop:stopTimer,
+  tres(){const d=todayS();stopTimer();TF={id:null,date:d,time:nowTime(),result:null,photo:null,note:'',back:null};openSheet({t:'test'})},
+  backup(){bk=null;openSheet({t:'backup'})},
+  async bkprep(e){e.disabled=true;e.textContent='Wird vorbereitet';
+    await saveChain;
+    const items={};for(const k of await keys())if(k!=='meta'){const b=await get(k);items[k]={iv:b64(b.iv),ct:b64(b.ct)}}
+    const m=await get('meta');
+    const data={app:'zyklus-backup',v:1,created:todayS(),meta:{v:m.v,iter:m.iter,salt:b64(m.salt),iv:b64(m.iv),wrapped:b64(m.wrapped)},items};
+    bk=new File([JSON.stringify(data)],`backup-${todayS()}.json`,{type:'application/json'});
+    renderSheet()},
+  async bkshare(){
+    try{
+      if(navigator.canShare&&navigator.canShare({files:[bk]}))await navigator.share({files:[bk]});
+      else{const a=document.createElement('a'),u=URL.createObjectURL(bk);a.href=u;a.download=bk.name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),6e4)}
+      S.lastBackup=todayS();await persist();bk=null;A.close();
+    }catch(err){if(err.name!=='AbortError')alert('Das Backup konnte nicht gespeichert werden.')}
+  },
+  restore(){openSheet({t:'restore',hasData:!!KEY||!!$('#lp')})},
+  pw(){openSheet({t:'pw'})},
+  wipe(){openSheet({t:'wipe'})},
+  help(){openSheet({t:'help'})},
+  skipinstall(){skipInstall=true;renderSetup()},
+};
+function b64(u8){let s='';for(let i=0;i<u8.length;i+=0x8000)s+=String.fromCharCode.apply(null,u8.subarray(i,i+0x8000));return btoa(s)}
+const unb64=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
+document.addEventListener('click',e=>{
+  const img=e.target.closest('.t img,.prev');
+  if(img&&img.src&&!e.target.closest('[data-a="pick"]')){e.preventDefault();e.stopPropagation();const l=document.createElement('div');l.className='light';l.innerHTML=`<img alt="Foto vom Teststreifen" src="${img.src}">`;l.onclick=()=>l.remove();document.body.append(l);return}
+  const el=e.target.closest('[data-a]');if(!el)return;
+  const fn=A[el.dataset.a];if(fn)Promise.resolve(fn(el)).catch(err=>{console.error(err);alert('Das hat nicht geklappt. Bitte versuch es noch einmal.')});
+});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){if($('.light'))$('.light').remove();else if(SHEET)A.close()}});
+window.addEventListener('focus',()=>setTimeout(()=>pickerUntil=0,1500));
+document.addEventListener('input',e=>{
+  const i=e.target.dataset.i;if(!i)return;const v=e.target.value;
+  if(i==='temp'||i==='note'){const d=dayOf(SHEET.date);d[i]=v;prune(SHEET.date);persistSoon()}
+  else if(i==='cycleLen'){S.settings.cycleLen=v?+v:null;persist()}
+  else if(i.startsWith('tf-'))TF[i.slice(3)]=v;
+});
+document.addEventListener('change',async e=>{
+  if(e.target.id!=='pf'||!e.target.files[0])return;
+  pickerUntil=0;
+  try{const blob=await shrink(e.target.files[0]);dropPreview();TF.blob=blob;TF.preview=URL.createObjectURL(blob);TF.err='';renderSheet()}
+  catch(err){console.error(err);TF.err='Dieses Foto ließ sich nicht öffnen. Wähl ein anderes aus.';renderSheet()}
+});
+const F={
+  async test(){
+    const t=TF;
+    if(!t.result){t.err='Wähl aus, ob der Test positiv, negativ oder ungültig ist.';renderSheet();return}
+    if(!t.date||num(t.date)>num(todayS())){t.err='Wähl einen Tag aus, der nicht in der Zukunft liegt.';renderSheet();return}
+    t.busy=true;renderSheet();
+    let photo=t.remove?null:t.photo;
+    if(t.blob){photo=crypto.randomUUID();await put('photo:'+photo,await enc(KEY,new Uint8Array(await t.blob.arrayBuffer())))}
+    if(t.photo&&photo!==t.photo)await removePhoto(t.photo);
+    const rec={id:t.id||crypto.randomUUID(),date:t.date,time:t.time,result:t.result,photo,note:t.note};
+    S.tests=S.tests.filter(x=>x.id!==rec.id).concat(rec);
+    await persist();
+    dropPreview();A.close();
+  },
+  async first(){
+    const d=$('#fd').value,l=$('#fl').value;
+    S.settings.cycleLen=l?+l:null;
+    if(d&&num(d)<=num(todayS()))dayOf(d).flow='mittel';
+    await persist();closeSheet();
+  },
+  async pw(){
+    const s=SHEET,p0=$('#p0').value,p1=$('#p1').value,p2=$('#p2').value;s.ok=false;
+    if(p1.length<8){s.err='Das neue Passwort braucht mindestens 8 Zeichen.';renderSheet();return}
+    if(p1!==p2){s.err='Die beiden neuen Passwörter stimmen nicht überein.';renderSheet();return}
+    const m=await get('meta');let dek;
+    try{dek=await unwrap(m,p0,true)}catch{s.err='Das aktuelle Passwort stimmt nicht.';renderSheet();return}
+    await put('meta',await wrap(dek,p1));s.err='';s.ok=true;renderSheet();
+  },
+  async wipe(){
+    if($('#wc').value.trim().toUpperCase()!=='LÖSCHEN'){SHEET.err='Gib zur Bestätigung LÖSCHEN ein.';renderSheet();return}
+    await wipeDb();KEY=null;S=null;SHEET=null;TF=null;$('#sheet').innerHTML='';boot();
+  },
+  async restore(){
+    const s=SHEET,file=$('#rf').files[0],pw=$('#rp').value;
+    if(!file){s.err='Wähl zuerst deine Backup-Datei aus.';renderSheet();return}
+    s.err='';s.busy=true;renderSheet();
+    const fail=m=>{s.err=m;s.busy=false;renderSheet()};
+    let data;
+    try{data=JSON.parse(await file.text());if(data.app!=='zyklus-backup'||!data.meta||!data.items||!data.items.state)throw 0}catch{return fail('Diese Datei ist kein Backup dieser Seite.')}
+    let meta,items={};
+    try{
+      meta={v:data.meta.v,iter:data.meta.iter,salt:unb64(data.meta.salt),iv:unb64(data.meta.iv),wrapped:unb64(data.meta.wrapped)};
+      for(const[k,b]of Object.entries(data.items)){if(!/^(state|photo:[\w-]+)$/.test(k))throw 0;items[k]={iv:unb64(b.iv),ct:unb64(b.ct)}}
+    }catch{return fail('Diese Datei ist beschädigt.')}
+    let dek;
+    try{dek=await unwrap(meta,pw);await dec(dek,items.state)}catch{return fail('Das Passwort passt nicht zu diesem Backup.')}
+    await wipeDb();await put('meta',meta);for(const[k,b]of Object.entries(items))await put(k,b);
+    photoCache.forEach(u=>URL.revokeObjectURL(u));photoCache.clear();
+    KEY=dek;await loadState();SHEET=null;$('#sheet').innerHTML='';tab='heute';lastActive=Date.now();renderApp();
+  },
+  async login(form){
+    const b=$('button[type=submit]',form),pw=$('#lp').value;b.disabled=true;b.textContent='Wird geöffnet';
+    try{KEY=await unwrap(await get('meta'),pw)}catch{loginErr='Das Passwort stimmt nicht.';renderLogin();return}
+    loginErr='';await loadState();lastActive=Date.now();hiddenAt=null;renderApp();
+  },
+  async setup(form){
+    const p1=$('#s1').value,p2=$('#s2').value,c=$('#sc').checked;
+    const err=m=>{setupErr=m;renderSetup()};
+    if(p1.length<8)return err('Das Passwort braucht mindestens 8 Zeichen.');
+    if(p1!==p2)return err('Die beiden Passwörter stimmen nicht überein.');
+    if(!c)return err('Bestätige bitte, dass du dir das Passwort merkst.');
+    const b=$('button[type=submit]',form);b.disabled=true;b.textContent='Wird eingerichtet';
+    const dek=await crypto.subtle.generateKey({name:'AES-GCM',length:256},true,['encrypt','decrypt']);
+    const meta=await wrap(dek,p1);
+    await put('meta',meta);
+    KEY=await unwrap(meta,p1);S=blank();await persist();
+    if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(()=>{});
+    setupErr='';lastActive=Date.now();renderApp();openSheet({t:'first'});
+  },
+};
+document.addEventListener('submit',e=>{
+  const form=e.target,n=form.dataset.f;if(!n)return;e.preventDefault();
+  Promise.resolve(F[n](form)).catch(err=>{console.error(err);alert('Das hat nicht geklappt. Bitte versuch es noch einmal.')});
+});
+
+/* ---------- Anmeldung und Einrichtung ---------- */
+let loginErr='',setupErr='',skipInstall=false;
+const bigStrip=`<svg class="bigstrip" viewBox="0 0 210 62" aria-hidden="true"><rect x="1.5" y="1.5" width="207" height="59" rx="9" fill="none" stroke="#fff" stroke-width="3"/><rect x="60" y="12" width="8" height="38" fill="#fff"/><rect x="108" y="12" width="8" height="38" fill="#B9A3F5"/></svg>`;
+function gate(html){$('#app').innerHTML=`<div class="gate"><div class="in">${bigStrip}${html}</div></div>`}
+function renderLogin(){
+  gate(`<h1>Zyklus</h1><p>Gib dein Passwort ein, um deine Einträge zu öffnen.</p>
+  <form data-f="login" novalidate>
+   <input type="text" autocomplete="username" value="Zyklus" hidden>
+   <label class="f"><span>Passwort</span><input type="password" id="lp" autocomplete="current-password" autofocus></label>
+   ${loginErr?`<p class="err" role="alert">${esc(loginErr)}</p>`:''}
+   <button class="btn full" type="submit">Anmelden</button>
+  </form>
+  <p style="margin-top:22px" class="small">Passwort vergessen? Niemand kann es zurücksetzen. Du kannst nur neu anfangen oder ein Backup mit seinem Passwort einspielen.</p>
+  <div class="row"><button class="link" data-a="wipe">Neu anfangen</button><button class="link" data-a="restore">Backup einspielen</button></div>`);
+}
+const isIOS=/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+const standalone=matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
+function renderInstall(){
+  gate(`<h1>Erst aufs Handy holen</h1><p>Auf dem iPhone speichert der Home-Bildschirm getrennt von Safari. Richte die Seite deshalb dort ein, sonst findest du deine Einträge später nicht wieder.</p>
+  <ol><li>Tippe in Safari auf das Teilen-Symbol.</li><li>Wähle „Zum Home-Bildschirm“ und bestätige.</li><li>Öffne „Zyklus“ auf deinem Home-Bildschirm und leg dort dein Passwort fest.</li></ol>
+  <button class="link" data-a="skipinstall">Nur im Browser ausprobieren</button>`);
+}
+function renderSetup(){
+  gate(`<h1>Zyklus</h1><p>Leg ein Passwort fest. Damit werden deine Einträge und Fotos verschlüsselt, und sie bleiben auf diesem Gerät.</p>
+  <form data-f="setup" novalidate>
+   <input type="text" autocomplete="username" value="Zyklus" hidden>
+   <label class="f"><span>Passwort, mindestens 8 Zeichen</span><input type="password" id="s1" autocomplete="new-password"></label>
+   <label class="f"><span>Passwort wiederholen</span><input type="password" id="s2" autocomplete="new-password"></label>
+   <label class="check"><input type="checkbox" id="sc"><span>Ich weiß: Wenn ich das Passwort vergesse, kann niemand meine Daten wiederherstellen.</span></label>
+   ${setupErr?`<p class="err" role="alert">${esc(setupErr)}</p>`:''}
+   <button class="btn full" type="submit">Passwort festlegen</button>
+  </form>
+  <button class="link" style="margin-top:16px" data-a="restore">Ich habe schon ein Backup</button>`);
+}
+async function boot(){
+  try{
+    if(!window.crypto||!crypto.subtle||!window.indexedDB)throw new Error('unsupported');
+    const m=await get('meta');
+    if(m)renderLogin();else if(isIOS&&!standalone&&!skipInstall)renderInstall();else renderSetup();
+  }catch(e){console.error(e);$('#app').innerHTML='<div class="gate"><div class="in"><h1>Zyklus</h1><p>Dieser Browser kann hier nichts speichern. Öffne die Seite in Safari oder Chrome und nicht im privaten Modus.</p></div></div>'}
+}
+boot();
+if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+</script>
+</body>
+</html>
