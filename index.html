@@ -261,7 +261,7 @@ async function enc(k,bytes){const iv=rnd(12);return {iv,ct:new Uint8Array(await 
 const dec=(k,b)=>crypto.subtle.decrypt({name:'AES-GCM',iv:b.iv},k,b.ct);
 
 /* ---------- Sitzung ---------- */
-let bloomNext=true,settingsOpen=false;
+let bloomNext=true,settingsOpen=false,remembered=false;
 let KEY=null,S=null,tab='heute',vy,vm,SHEET=null,TF=null,photoCache=new Map(),saveChain=Promise.resolve(),saveT=null,bk=null;
 const blank=()=>({v:1,settings:{cycleLen:null},days:{},tests:[],lastBackup:null});
 function persist(){
@@ -284,10 +284,10 @@ async function lock(){
 let lastActive=Date.now(),hiddenAt=null,pickerUntil=0;
 const picking=()=>Date.now()<pickerUntil;
 ['pointerdown','keydown','input'].forEach(e=>addEventListener(e,()=>lastActive=Date.now(),{passive:true}));
-setInterval(()=>{if(KEY&&!picking()&&Date.now()-lastActive>5*6e4)lock()},15000);
+setInterval(()=>{if(KEY&&!remembered&&!picking()&&Date.now()-lastActive>5*6e4)lock()},15000);
 document.addEventListener('visibilitychange',()=>{
   if(document.hidden){hiddenAt=Date.now();if(KEY&&saveT)persist();return}
-  if(KEY&&!picking()&&hiddenAt&&Date.now()-hiddenAt>2*6e4)lock();
+  if(KEY&&!remembered&&!picking()&&hiddenAt&&Date.now()-hiddenAt>2*6e4)lock();
   else if(KEY&&!SHEET)renderApp();
 });
 
@@ -423,7 +423,7 @@ const ICON={
  verlauf:'<path d="M12 20.5s-8-4.7-8-11a4.4 4.4 0 0 1 8-2.5 4.4 4.4 0 0 1 8 2.5c0 6.3-8 11-8 11z"/>'};
 const ic=k=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICON[k]}</svg>`;
 function greet(){const h=new Date().getHours();return h<11?'Guten Morgen':h<18?'Hallo':'Guten Abend'}
-const page=(body,title)=>`<div class="wrap"><div class="top"><h1>${title||greet()}</h1><button class="lockb" data-a="lock" aria-label="Sperren"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><rect x="5" y="10.5" width="14" height="10" rx="3.5"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></svg></button></div>${body}</div>
+const page=(body,title)=>`<div class="wrap"><div class="top"><h1>${title||greet()}</h1><button class="lockb" data-a="lock" aria-label="Abmelden"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><rect x="5" y="10.5" width="14" height="10" rx="3.5"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></svg></button></div>${body}</div>
 <nav class="tabs" aria-label="Bereiche">${[['heute','Heute'],['kal','Kalender'],['tests','Tests'],['verlauf','Verlauf']].map(([k,l])=>`<button data-a="tab" data-v="${k}" ${tab===k?'aria-current="page"':''}>${ic(k)}${l}</button>`).join('')}</nav>`;
 
 /* ---------- Ansichten ---------- */
@@ -623,7 +623,7 @@ function stopTimer(){tEnd=null;clearInterval(tI);tI=null;drawTimer();if(KEY&&!SH
 
 /* ---------- Klicks und Eingaben ---------- */
 const A={
-  async lock(){await lock()},
+  async lock(){await del('remember');remembered=false;await lock()},
   tab(e){tab=e.dataset.v;if(tab==='heute')bloomNext=true;window.scrollTo(0,0);renderApp()},
   close(){if(SHEET&&SHEET.t==='test'){const b=TF&&TF.back;dropPreview();if(b){TF=null;openSheet({t:'day',date:b});return}}if(KEY&&SHEET&&SHEET.t==='day')persist();closeSheet()},
   day(e){openSheet({t:'day',date:e.dataset.v})},
@@ -646,7 +646,7 @@ const A={
   backup(){bk=null;openSheet({t:'backup'})},
   async bkprep(e){e.disabled=true;e.textContent='Wird vorbereitet';
     await saveChain;
-    const items={};for(const k of await keys())if(k!=='meta'){const b=await get(k);items[k]={iv:b64(b.iv),ct:b64(b.ct)}}
+    const items={};for(const k of await keys())if(k!=='meta'&&k!=='remember'){const b=await get(k);items[k]={iv:b64(b.iv),ct:b64(b.ct)}}
     const m=await get('meta');
     const data={app:'zyklus-backup',v:1,created:todayS(),meta:{v:m.v,iter:m.iter,salt:b64(m.salt),iv:b64(m.iv),wrapped:b64(m.wrapped)},items};
     bk=new File([JSON.stringify(data)],`backup-${todayS()}.json`,{type:'application/json'});
@@ -717,7 +717,7 @@ const F={
   },
   async wipe(){
     if($('#wc').value.trim().toUpperCase()!=='LÖSCHEN'){SHEET.err='Gib zur Bestätigung LÖSCHEN ein.';renderSheet();return}
-    await wipeDb();KEY=null;S=null;SHEET=null;TF=null;$('#sheet').innerHTML='';boot();
+    await wipeDb();remembered=false;KEY=null;S=null;SHEET=null;TF=null;$('#sheet').innerHTML='';boot();
   },
   async restore(){
     const s=SHEET,file=$('#rf').files[0],pw=$('#rp').value;
@@ -735,15 +735,15 @@ const F={
     try{dek=await unwrap(meta,pw);await dec(dek,items.state)}catch{return fail('Das Passwort passt nicht zu diesem Backup.')}
     await wipeDb();await put('meta',meta);for(const[k,b]of Object.entries(items))await put(k,b);
     photoCache.forEach(u=>URL.revokeObjectURL(u));photoCache.clear();
-    KEY=dek;await loadState();SHEET=null;$('#sheet').innerHTML='';tab='heute';bloomNext=true;lastActive=Date.now();renderApp();
+    KEY=dek;await loadState();if(remembered)await remember(true,dek);SHEET=null;$('#sheet').innerHTML='';tab='heute';bloomNext=true;lastActive=Date.now();renderApp();
   },
   async login(form){
     const b=$('button[type=submit]',form),pw=$('#lp').value;b.disabled=true;b.textContent='Wird geöffnet';
     try{KEY=await unwrap(await get('meta'),pw)}catch{loginErr='Das Passwort stimmt nicht.';renderLogin();return}
-    loginErr='';await loadState();lastActive=Date.now();hiddenAt=null;renderApp();
+    const rm=$('#rm').checked;loginErr='';await loadState();await remember(rm,KEY);bloomNext=true;lastActive=Date.now();hiddenAt=null;renderApp();
   },
   async setup(form){
-    const p1=$('#s1').value,p2=$('#s2').value,c=$('#sc').checked;
+    const p1=$('#s1').value,p2=$('#s2').value,c=$('#sc').checked,rm=$('#rm').checked;
     const err=m=>{setupErr=m;renderSetup()};
     if(p1.length<8)return err('Das Passwort braucht mindestens 8 Zeichen.');
     if(p1!==p2)return err('Die beiden Passwörter stimmen nicht überein.');
@@ -752,7 +752,7 @@ const F={
     const dek=await crypto.subtle.generateKey({name:'AES-GCM',length:256},true,['encrypt','decrypt']);
     const meta=await wrap(dek,p1);
     await put('meta',meta);
-    KEY=await unwrap(meta,p1);S=blank();await persist();bloomNext=true;
+    KEY=await unwrap(meta,p1);S=blank();await persist();await remember(rm,KEY);bloomNext=true;
     if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(()=>{});
     setupErr='';lastActive=Date.now();renderApp();openSheet({t:'first'});
   },
@@ -763,6 +763,7 @@ document.addEventListener('submit',e=>{
 });
 
 /* ---------- Anmeldung und Einrichtung ---------- */
+async function remember(on,k){remembered=false;if(!on){await del('remember');return}try{await put('remember',k);remembered=true}catch(e){console.error(e)}}
 let loginErr='',setupErr='',skipInstall=false;
 const bigStrip=`<div class="gatefl">${flowerPlain('')}</div>`;
 function gate(html){setPhase(null);$('#app').innerHTML=`<div class="gate"><div class="in">${bigStrip}${html}</div></div>`}
@@ -771,6 +772,7 @@ function renderLogin(){
   <form data-f="login" novalidate>
    <input type="text" autocomplete="username" value="Zyklus" hidden>
    <label class="f"><span>Passwort</span><input type="password" id="lp" autocomplete="current-password" autofocus></label>
+   <label class="check"><input type="checkbox" id="rm" checked><span>Auf diesem Gerät angemeldet bleiben</span></label>
    ${loginErr?`<p class="err" role="alert">${esc(loginErr)}</p>`:''}
    <button class="btn full" type="submit">Anmelden</button>
   </form>
@@ -791,6 +793,7 @@ function renderSetup(){
    <label class="f"><span>Passwort, mindestens 8 Zeichen</span><input type="password" id="s1" autocomplete="new-password"></label>
    <label class="f"><span>Passwort wiederholen</span><input type="password" id="s2" autocomplete="new-password"></label>
    <label class="check"><input type="checkbox" id="sc"><span>Ich weiß: Wenn ich das Passwort vergesse, kann niemand meine Daten wiederherstellen.</span></label>
+   <label class="check"><input type="checkbox" id="rm" checked><span>Auf diesem Gerät angemeldet bleiben</span></label>
    ${setupErr?`<p class="err" role="alert">${esc(setupErr)}</p>`:''}
    <button class="btn full" type="submit">Passwort festlegen</button>
   </form>
@@ -800,6 +803,10 @@ async function boot(){
   try{
     if(!window.crypto||!crypto.subtle||!window.indexedDB)throw new Error('unsupported');
     const m=await get('meta');
+    if(m){
+      const k=await get('remember');
+      if(k){try{KEY=k;await loadState();remembered=true;renderApp();return}catch(e){console.error(e);KEY=null;S=null;remembered=false;await del('remember')}}
+    }
     if(m)renderLogin();else if(isIOS&&!standalone&&!skipInstall)renderInstall();else renderSetup();
   }catch(e){console.error(e);$('#app').innerHTML='<div class="gate"><div class="in"><h1>Zyklus</h1><p>Dieser Browser kann hier nichts speichern. Öffne die Seite in Safari oder Chrome und nicht im privaten Modus.</p></div></div>'}
 }
