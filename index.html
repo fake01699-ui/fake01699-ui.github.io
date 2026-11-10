@@ -95,6 +95,21 @@ svg.fl{display:block;width:100%;height:auto;overflow:visible}
 .ph i{width:18px;height:18px;border-radius:50%;display:block}
 .ph.on{background:#fff;color:var(--ink);font-weight:700;box-shadow:0 3px 12px rgba(59,35,80,.12)}
 .ph-bleed i{background:linear-gradient(#F57C9B,#D93A68)}.ph-fol i{background:linear-gradient(#BDE6CF,#5FB795)}.ph-fert i{background:linear-gradient(#D27BEA,#7A3FE0)}.ph-lut i{background:linear-gradient(#C1C9F2,#7F8FDB)}
+.tipcard{display:flex;gap:14px;align-items:flex-start;width:100%;text-align:left;margin-top:18px;background:var(--card);border-radius:24px;padding:16px 18px}
+.tipe{font-size:34px;line-height:1}
+.tipcard b{display:block;font:italic 400 20px var(--serif);margin-bottom:3px}
+.tipt{display:block;font-size:15px;color:var(--soft)}
+.tipm{display:block;margin-top:8px;font-weight:600;color:var(--accent);font-size:15px}
+.tipd{background:#fff;border-radius:20px;padding:2px 16px;margin-bottom:10px}
+.tipd summary{min-height:54px;display:flex;align-items:center;gap:10px;font-weight:600;cursor:pointer;list-style:none}
+.tipd summary::-webkit-details-marker{display:none}
+.tipd summary span{font-size:24px}
+.tipd summary::after{content:"+";margin-left:auto;font-size:22px;color:var(--soft)}
+.tipd[open] summary::after{content:"–"}
+.tipd ul{margin:0 0 14px;padding-left:20px}
+.tipd li{margin-bottom:9px;font-size:16px}
+.src{margin:6px 0 0;padding-left:20px;font-size:14px}
+.src a{color:var(--soft)}
 .mood{display:flex;gap:12px;align-items:center;text-align:left;max-width:360px;margin:12px auto 0;background:var(--card);border-radius:22px;padding:12px 16px}
 .mood .emo{font-size:38px;line-height:1}
 .mood b{font-weight:700}
@@ -484,7 +499,7 @@ function renderApp(){
 function vHeute(m){
   const t=todayS(),c=m.cur;
   if(!c)return page(`<div class="hero"><div class="bloomwrap">${flowerPlain(bloomNext?'bloom':'')}</div><h2>Wann begann deine letzte Blutung?</h2><p>Sobald der erste Tag eingetragen ist, rechne ich deine Testtage aus.</p></div>
-    <button class="btn full" data-a="first">Erste Blutung eintragen</button>${timerBtn()}`);
+    <button class="btn full" data-a="first">Erste Blutung eintragen</button>${timerBtn()}${tipCard(m)}`);
   const st=statusOf(m),cd=m.T-c.start+1,N=Math.max(m.L||28,cd);
   const dd=S.days[t]||{},list=[];
   if(dd.flow)list.push('Blutung: '+FLOW[dd.flow]);
@@ -499,6 +514,7 @@ function vHeute(m){
   <div class="acts"><button class="btn" data-a="newtest" data-v="${t}">Test eintragen</button><button class="btn line" data-a="day" data-v="${t}">Blutung eintragen</button></div>
   ${timerBtn()}
   ${list.length?`<ul class="chips">${list.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:''}
+  ${tipCard(m)}
   ${m.nextStart!=null&&m.nextStart>m.T&&!/Blutung etwa/.test(st.h)?`<p class="soft">Deine nächste Blutung kommt etwa am ${f(m.nextStart)}.</p>`:''}`);
 }
 const timerBtn=()=>`<button class="timerb" data-a="timer" ${tEnd?'disabled':''}>5-Minuten-Timer zum Ablesen starten</button>`;
@@ -552,7 +568,7 @@ function openSheet(s){SHEET=s;renderSheet(true)}
 function closeSheet(){SHEET=null;TF=null;$('#sheet').innerHTML='';if(KEY)renderApp()}
 function renderSheet(fresh){
   const old=$('#sheet .sheet'),top=old?old.scrollTop:0;
-  const html={day:shDay,test:shTest,backup:shBackup,restore:shRestore,pw:shPw,wipe:shWipe,help:shHelp,first:shFirst}[SHEET.t](SHEET);
+  const html={day:shDay,test:shTest,backup:shBackup,restore:shRestore,pw:shPw,wipe:shWipe,help:shHelp,first:shFirst,tips:shTips}[SHEET.t](SHEET);
   $('#sheet').innerHTML=`<div class="back" data-a="close"></div><div class="sheet" role="dialog" aria-modal="true" style="${fresh?'':'animation:none'}">${html}</div>`;
   $('#sheet .sheet').scrollTop=top;
   hydrate($('#sheet'));
@@ -620,6 +636,70 @@ function shWipe(s){
   <label class="f"><span>Gib LÖSCHEN ein</span><input type="text" id="wc" autocapitalize="characters" autocomplete="off"></label>
   ${s.err?`<p class="err" role="alert">${esc(s.err)}</p>`:''}
   <button class="btn danger full" type="submit">Endgültig löschen</button></form>`;
+}
+
+/* ---------- Kinderwunsch-Tipps ---------- */
+const DAILY=[
+ ['💞','Alle 2 bis 3 Tage Sex, über den ganzen Zyklus verteilt, gibt laut NHS die besten Chancen. Ihr müsst nicht alles auf den Eisprung legen.'],
+ ['💊','Nimm schon jetzt täglich 400 µg Folsäure. Empfohlen ist der Start mindestens 4 Wochen vor der Schwangerschaft.'],
+ ['🥬','Blattgemüse, Brokkoli, Hülsenfrüchte und Vollkorn liefern natürliches Folat.'],
+ ['🐟','Ein- bis zweimal pro Woche Fisch, gern fettreichen wie Lachs oder Hering, liefert Jod und Omega-3.'],
+ ['🧂','Koch mit Jodsalz. Jod ist wichtig für die Entwicklung deines Babys.'],
+ ['☕','Etwa zwei Tassen Filterkaffee am Tag gelten als unbedenklich. Schwarztee, Mate und Cola zählen mit.'],
+ ['🥂','Am besten keinen Alkohol mehr, sobald du schwanger sein könntest.'],
+ ['🫖','Für Kinderwunsch-Tees gibt es kaum Studien. Himbeerblättertee wenn überhaupt nur in der ersten Zyklushälfte.'],
+ ['🤍','Kommt Sex euch wie eine Pflicht vor, plant bewusst Zeit nur für euch zwei ein. Druck nimmt die Lust.'],
+ ['⏳','Nach dem Absetzen der Verhütung kann es einige Wochen dauern, bis sich dein Zyklus einpendelt.'],
+ ['🚭','Nicht rauchen, und dein Partner am besten auch nicht. Das hilft euch beiden.'],
+ ['🌱','Etwa 1 von 3 Frauen wird im ersten Monat schwanger, mehr als 8 von 10 innerhalb eines Jahres.']];
+const FERT_TIP=['☀️','Jetzt sind deine fruchtbarsten Tage. Sex heute und in den nächsten 2 Tagen gibt die besten Chancen. Spermien überleben bis zu 7 Tage.'];
+function tipCard(m){
+  const cur=m.cur?dayPhase(m,m.cur,m.T).p:null;
+  const[e,t]=cur==='fert'?FERT_TIP:DAILY[m.T%DAILY.length];
+  return `<button class="tipcard" data-a="tips"><span class="tipe" aria-hidden="true">${e}</span><span><b>Tipp für heute</b><span class="tipt">${esc(t)}</span><span class="tipm">Alle Kinderwunsch-Tipps</span></span></button>`;
+}
+const TIPS=[
+ ['💞','Der richtige Zeitpunkt',[
+  'Am besten habt ihr alle 2 bis 3 Tage Sex, über den ganzen Zyklus verteilt. Das empfehlen NHS und NICE, weil dann fast immer Spermien bereitstehen.',
+  'Spermien überleben bis zu 7 Tage, die Eizelle nur etwa 12 bis 24 Stunden. Am fruchtbarsten sind der Tag vor und der Tag nach dem Eisprung.',
+  'Ist dein Ovulationstest positiv, sind heute und die nächsten 2 Tage ideal.',
+  'Etwa 1 von 3 Frauen wird im ersten Monat schwanger. Mehr als 8 von 10 Paaren unter 40 klappt es innerhalb eines Jahres.']],
+ ['🥗','Ernährung',[
+  'Es gibt kein spezielles Kinderwunsch-Superfood. Abwechslungsreich und ausgewogen essen ist die beste Grundlage, auch für deinen Partner.',
+  'Viel Gemüse, Obst, Vollkorn und Hülsenfrüchte. Blattgemüse wie Spinat und Feldsalat, Brokkoli und Linsen liefern natürliches Folat.',
+  'Milchprodukte jeden Tag, Fisch jede Woche, am besten auch fettreichen wie Lachs oder Hering.',
+  'Pflanzliche Öle wie Raps-, Lein- oder Walnussöl wählen. Fleisch und Wurst: weniger ist mehr.',
+  'Koch mit Jodsalz.',
+  'Gewöhn dir schon jetzt an, nichts Rohes vom Tier zu essen, also keinen rohen Fisch, kein rohes Fleisch und keine Rohmilch. In der Schwangerschaft ist das wegen Infektionen wichtig.',
+  'Isst du vegetarisch oder vegan, lass dich am besten schon jetzt beraten. Besonders Vitamin B12 ist dann wichtig.']],
+ ['💊','Folsäure und Jod',[
+  'Folsäure: täglich 400 µg als Tablette, ab jetzt bis zum Ende der 12. Schwangerschaftswoche. Das senkt das Risiko für Fehlbildungen wie einen offenen Rücken.',
+  'Nicht mehrere Präparate kombinieren. Mehr als 1.000 µg Folsäure am Tag sind nicht gut.',
+  'Jod als Tablette, 100 bis 150 µg täglich, wird erst ab der Schwangerschaft empfohlen. Bis dahin reicht Jodsalz.',
+  'Nimmst du Medikamente oder hast eine Schilddrüsenerkrankung, sprich die Präparate mit deiner Frauenärztin ab.']],
+ ['🫖','Tee und Getränke',[
+  'Ehrlich gesagt: Für Kinderwunsch-Tees gibt es kaum gute Studien. Sie können guttun, sind aber kein Wundermittel.',
+  'Frauenmanteltee wird traditionell bei Kinderwunsch getrunken. Klinische Studien dazu gibt es keine, er gilt aber als gut verträglich.',
+  'Himbeerblättertee wird oft empfohlen, gilt aber als wehenfördernd. In der Schwangerschaft wird er erst ab etwa der 35. Woche empfohlen. Trink ihn deshalb wenn überhaupt nur in der ersten Zyklushälfte bis zum Eisprung.',
+  'Mönchspfeffer ist ein Arzneimittel und kein Tee. Nimm ihn nur nach Rücksprache mit deiner Frauenärztin.',
+  'Kräutertees lieber abwechseln und nicht literweise trinken, denn manche enthalten in großen Mengen bedenkliche Stoffe. Hibiskustee nicht pur trinken.',
+  'Gut für jeden Tag: Wasser, Hagebuttentee und Früchtetee ohne Hibiskus. Ingwertee in Maßen.',
+  'Kaffee: etwa zwei Tassen Filterkaffee am Tag gelten als unbedenklich. Schwarztee, Grüntee, Mate und Cola zählen mit.',
+  'Alkohol: am besten gar nicht, sobald du schwanger sein könntest.']],
+ ['🌿','Alltag und Körper',[
+  'Nicht rauchen, das gilt auch für deinen Partner. Er sollte außerdem wenig Alkohol trinken und gesund essen, das tut den Spermien gut.',
+  'Ein gesundes Gewicht hilft. Zu viel und zu wenig Gewicht kann es schwerer machen, schwanger zu werden. Extreme Diäten sind keine gute Idee.',
+  'Bewegung und genug Schlaf helfen gegen Stress.',
+  'Stress kann die Lust senken. Plant Zeit nur für euch zwei ein, damit Sex keine Pflicht wird.',
+  'Nach dem Absetzen der Verhütung kann es einige Wochen dauern, bis sich dein Zyklus eingependelt hat.']],
+ ['🩺','Wann zur Frauenärztin',[
+  'Am besten schon jetzt zu einem Check-up, um Impfungen, Medikamente und Vorerkrankungen zu besprechen. Setz verschriebene Medikamente nicht ohne Rücksprache ab.',
+  'Wenn es nach einem Jahr mit regelmäßigem Sex nicht geklappt hat, oder schon früher, wenn du über 35 bist.',
+  'Wenn dein Zyklus sehr unregelmäßig ist oder deine Periode ausbleibt.']]];
+const TIP_SRC=[['NHS: Trying to get pregnant','https://www.nhs.uk/pregnancy/trying-for-a-baby/trying-to-get-pregnant/'],['Tommy’s: Best time to try for a baby','https://www.tommys.org/pregnancy-information/planning-pregnancy/how-get-pregnant/getting-pregnant-faqs/when-best-time-month-try-baby'],['Netzwerk Gesund ins Leben','https://www.gesund-ins-leben.de/schwanger'],['Verbraucherzentrale: Nahrungsergänzung','https://www.verbraucherzentrale.de/node/13324'],['Apotheken Umschau: Zeugungs-Check','https://www.apotheken-umschau.de/print/el/el26-02/der-zeugungs-check-1461739.html']];
+function shTips(){
+  return head('Tipps für deinen Kinderwunsch')+TIPS.map(([e,t,l],i)=>`<details class="tipd" ${i===0?'open':''}><summary><span aria-hidden="true">${e}</span>${esc(t)}</summary><ul>${l.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></details>`).join('')+
+  `<p class="muted small" style="margin-top:18px">Allgemeine Tipps, keine ärztliche Beratung. Quellen:</p><ul class="src">${TIP_SRC.map(([n,u])=>`<li><a href="${u}" target="_blank" rel="noopener noreferrer">${esc(n)}</a></li>`).join('')}</ul>`;
 }
 function shHelp(){
   const it=['Nicht zur Verhütung geeignet.','Testen: Streifen bis zur Max-Linie 5 bis 10 Sekunden eintauchen, flach hinlegen und nach 5 Minuten ablesen, nicht später.','Ein positiver Test bedeutet: Eisprung wahrscheinlich in den nächsten 24 bis 48 Stunden.','Am besten zwischen 10 und 20 Uhr testen, nicht mit dem ersten Morgenurin. Etwa 2 Stunden vorher wenig trinken.','Mindestens 5 Tage testen oder bis der Test positiv ist. Ist die Zykluslänge unbekannt, ab Zyklustag 5.','Bei unregelmäßigen oder ungewöhnlich langen Zyklen zum Arzt oder zur Ärztin gehen.','Manche Medikamente gegen Unfruchtbarkeit können das Ergebnis verfälschen.','Die Prognosen hier sind Schätzungen und keine Diagnose.'];
@@ -707,6 +787,7 @@ const A={
   pw(){openSheet({t:'pw'})},
   wipe(){openSheet({t:'wipe'})},
   help(){openSheet({t:'help'})},
+  tips(){openSheet({t:'tips'})},
   skipinstall(){skipInstall=true;renderSetup()},
 };
 function b64(u8){let s='';for(let i=0;i<u8.length;i+=0x8000)s+=String.fromCharCode.apply(null,u8.subarray(i,i+0x8000));return btoa(s)}
