@@ -95,6 +95,27 @@ svg.fl{display:block;width:100%;height:auto;overflow:visible}
 .ph i{width:18px;height:18px;border-radius:50%;display:block}
 .ph.on{background:#fff;color:var(--ink);font-weight:700;box-shadow:0 3px 12px rgba(59,35,80,.12)}
 .ph-bleed i{background:linear-gradient(#F57C9B,#D93A68)}.ph-fol i{background:linear-gradient(#BDE6CF,#5FB795)}.ph-fert i{background:linear-gradient(#D27BEA,#7A3FE0)}.ph-lut i{background:linear-gradient(#C1C9F2,#7F8FDB)}
+.folic{display:flex;gap:14px;align-items:center;width:100%;text-align:left;margin-top:18px;background:var(--card);border-radius:24px;padding:14px 18px;min-height:64px}
+.folic b{display:block}
+.folic .small{display:block}
+.tick{width:30px;height:30px;flex:none;border-radius:50%;box-shadow:inset 0 0 0 2px var(--accent);display:grid;place-items:center;color:#fff;font-weight:700;font-size:17px;transition:background .15s}
+.folic.on .tick{background:linear-gradient(120deg,var(--accent),var(--accent2));box-shadow:none}
+.cmp{background:var(--card);border-radius:22px;padding:10px;margin-bottom:12px;display:grid;gap:6px}
+.cmpr{display:grid;grid-template-columns:62px 1fr;gap:8px;align-items:center;font-size:14px;color:var(--soft)}
+.cmpr img{width:100%;height:46px;object-fit:cover;border-radius:10px;background:var(--line)}
+.doc{background:#fff;border-radius:20px;padding:16px}
+.doc dl{display:grid;grid-template-columns:1fr auto;gap:8px 12px;margin:0 0 16px}
+.doc dt{color:var(--soft)}
+.doc dd{margin:0;font-weight:600;text-align:right}
+.doc table{width:100%;border-collapse:collapse;font-size:15px}
+.doc th{text-align:left;color:var(--soft);font-weight:600;padding:6px 4px;border-bottom:1px solid var(--line)}
+.doc td{padding:7px 4px;border-bottom:1px solid var(--line)}
+@media print{
+  body{background:#fff}body::before,body::after{display:none}
+  #app,#timer,.back,.tabs,.noprint,.sh .link{display:none!important}
+  .sheet{position:static;max-height:none;overflow:visible;background:#fff;border-radius:0;padding:0;animation:none}
+  .doc{padding:0}
+}
 .tipcard{display:flex;gap:14px;align-items:flex-start;width:100%;text-align:left;margin-top:18px;background:var(--card);border-radius:24px;padding:16px 18px}
 .tipe{font-size:34px;line-height:1}
 .tipcard b{display:block;font:italic 400 20px var(--serif);margin-bottom:3px}
@@ -386,11 +407,19 @@ function statusOf(m){
     if(T===c.pos)return{h:'Test positiv',d:`Eisprung wahrscheinlich in 24 bis 48 Stunden, also am ${f(T+1)} oder ${f(T+2)}.`,fert:1};
     return{h:'Besonders fruchtbare Tage',d:`Dein Test war am ${f(c.pos)} positiv. Eisprung wahrscheinlich am ${f(c.pos+1)} oder ${f(c.pos+2)}.`,fert:1};
   }
+  const pt=pregTest(m);
+  if(pt&&T>=pt.from){
+    const o=T-pt.from;
+    return{h:'Zeit für einen Schwangerschaftstest',d:(o?`Deine Periode ist seit ${o} ${o===1?'Tag':'Tagen'} fällig. `:'Heute wäre deine Periode fällig. ')+'Am aussagekräftigsten ist der Test mit dem ersten Morgenurin. Kommt die Blutung, trag sie einfach ein.'};
+  }
   if(m.nextStart!=null&&T>=m.nextStart){
     const o=T-m.nextStart;
     return{h:o?`Blutung seit ${o} ${o===1?'Tag':'Tagen'} erwartet`:'Blutung heute erwartet',d:'Trag sie ein, sobald sie beginnt. Dann startet der nächste Zyklus.'};
   }
-  if(c.pos!=null)return{h:m.nextStart!=null?`Nächste Blutung etwa am ${f(m.nextStart)}`:'Test war positiv',d:`Positiver Test am ${f(c.pos)}.`};
+  if(pt){
+    const dpo=T-pt.ov;
+    return{h:`Tag ${dpo} nach dem Eisprung`,d:`Ein Schwangerschaftstest ist ab dem ${f(pt.from)} sinnvoll. Vorher kann er negativ sein, obwohl du schwanger bist.`,dpo};
+  }
   if(T<m.planFrom)return{h:`Test ab ${f(m.planFrom)}`,d:m.L?`Das ist Zyklustag ${ts}, passend zu ${m.L} Tagen Zykluslänge.`:'Deine Zykluslänge ist noch unbekannt, deshalb startest du an Zyklustag 5.'};
   if(T<=m.planEnd){
     if(r==='negativ')return{h:'Heute negativ',d:'Morgen weiter testen, bis der Test positiv ist.'};
@@ -398,6 +427,13 @@ function statusOf(m){
     return{h:'Heute testen',d:when};
   }
   return{h:'Noch kein positiver Test',d:m.nextStart!=null?`Nächste Blutung etwa am ${f(m.nextStart)}.`:'Trag die nächste Blutung ein, sobald sie beginnt.'};
+}
+
+// Schwangerschaftstest: ab dem Tag, an dem die Periode fällig wäre (sonst etwa 14 Tage nach dem Eisprung)
+function pregTest(m){
+  const c=m.cur;if(!c||c.pos==null||m.T<=c.pos+2)return null;
+  const ov=c.pos+1;
+  return {ov,from:m.nextStart!=null&&m.nextStart>ov+9?m.nextStart:ov+14};
 }
 
 /* ---------- Bausteine ---------- */
@@ -499,7 +535,7 @@ function renderApp(){
 function vHeute(m){
   const t=todayS(),c=m.cur;
   if(!c)return page(`<div class="hero"><div class="bloomwrap">${flowerPlain(bloomNext?'bloom':'')}</div><h2>Wann begann deine letzte Blutung?</h2><p>Sobald der erste Tag eingetragen ist, rechne ich deine Testtage aus.</p></div>
-    <button class="btn full" data-a="first">Erste Blutung eintragen</button>${timerBtn()}${tipCard(m)}`);
+    <button class="btn full" data-a="first">Erste Blutung eintragen</button>${timerBtn()}${folicCard()}${tipCard(m)}`);
   const st=statusOf(m),cd=m.T-c.start+1,N=Math.max(m.L||28,cd);
   const dd=S.days[t]||{},list=[];
   if(dd.flow)list.push('Blutung: '+FLOW[dd.flow]);
@@ -514,6 +550,7 @@ function vHeute(m){
   <div class="acts"><button class="btn" data-a="newtest" data-v="${t}">Test eintragen</button><button class="btn line" data-a="day" data-v="${t}">Blutung eintragen</button></div>
   ${timerBtn()}
   ${list.length?`<ul class="chips">${list.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:''}
+  ${folicCard()}
   ${tipCard(m)}
   ${m.nextStart!=null&&m.nextStart>m.T&&!/Blutung etwa/.test(st.h)?`<p class="soft">Deine nächste Blutung kommt etwa am ${f(m.nextStart)}.</p>`:''}`);
 }
@@ -541,7 +578,10 @@ function vTests(m){
   body+=`<p class="muted small" style="margin-top:12px">Entscheidend ist immer der Vergleich mit der Kontrolllinie auf demselben Streifen.</p>`;
   let last='x';
   for(const t of all){const c=m.cycleOf(t.n),g=c?c.start:'none';
-    if(g!==last){body+=`<h3 class="cyc">${c?'Zyklus ab '+f(c.start):'Ohne Zyklus'}</h3>`;last=g}
+    if(g!==last){body+=`<h3 class="cyc">${c?'Zyklus ab '+f(c.start):'Ohne Zyklus'}</h3>`;last=g;
+      const ph=all.filter(x=>x.photo&&(m.cycleOf(x.n)||{start:'none'}).start===g).sort((a,b)=>(a.date+(a.time||'')).localeCompare(b.date+(b.time||'')));
+      if(ph.length>=2)body+=`<div class="cmp" aria-label="Teststreifen im Vergleich">${ph.map(x=>`<div class="cmpr"><span>${c?'Tag '+(x.n-c.start+1):esc(fs(x.n))}${x.result==='positiv'?' ✦':''}</span><img data-photo="${esc(x.photo)}" alt="Teststreifen vom ${esc(fs(x.n))}"></div>`).join('')}</div>`;
+    }
     body+=`<button class="t" data-a="edittest" data-v="${esc(t.id)}">${t.photo?`<img data-photo="${esc(t.photo)}" alt="Foto vom Teststreifen">`:''}
       <span class="m">${strip(t.result)}<span><b class="${t.result}">${RES[t.result]}</b> ${esc(fs(t.n))}${t.time?', '+esc(t.time)+' Uhr':''}${c?`<br><span class="muted small">Zyklustag ${t.n-c.start+1}</span>`:''}${t.note?`<br><span class="muted small">${esc(t.note)}</span>`:''}</span></span></button>`}
   return page(body,'Deine Tests');
@@ -558,6 +598,7 @@ function vVerlauf(m){
   <button class="st" data-a="backup">Backup erstellen<small>${days==null?'Noch kein Backup gemacht':days===0?'Letztes Backup heute':`Letztes Backup vor ${days} ${days===1?'Tag':'Tagen'}`}</small></button>
   <button class="st" data-a="restore">Backup wiederherstellen</button>
   <button class="st" data-a="pw">Passwort ändern</button>
+  <button class="st" data-a="doc">Übersicht für die Frauenärztin<small>Zum Zeigen oder als PDF speichern</small></button>
   <button class="st" data-a="help">Hinweise aus der Testanleitung</button>
   <button class="st" data-a="wipe" style="color:#A81C49">Alle Daten löschen</button></details>`;
   return page(body,'Deine Zyklen');
@@ -568,14 +609,14 @@ function openSheet(s){SHEET=s;renderSheet(true)}
 function closeSheet(){SHEET=null;TF=null;$('#sheet').innerHTML='';if(KEY)renderApp()}
 function renderSheet(fresh){
   const old=$('#sheet .sheet'),top=old?old.scrollTop:0;
-  const html={day:shDay,test:shTest,backup:shBackup,restore:shRestore,pw:shPw,wipe:shWipe,help:shHelp,first:shFirst,tips:shTips}[SHEET.t](SHEET);
+  const html={day:shDay,test:shTest,backup:shBackup,restore:shRestore,pw:shPw,wipe:shWipe,help:shHelp,first:shFirst,tips:shTips,doc:shDoc}[SHEET.t](SHEET);
   $('#sheet').innerHTML=`<div class="back" data-a="close"></div><div class="sheet" role="dialog" aria-modal="true" style="${fresh?'':'animation:none'}">${html}</div>`;
   $('#sheet .sheet').scrollTop=top;
   hydrate($('#sheet'));
 }
 const head=(t,sub)=>`<div class="sh"><div><h2>${esc(t)}</h2>${sub?`<p class="muted small">${esc(sub)}</p>`:''}</div><button class="link" data-a="close">Fertig</button></div>`;
 function dayOf(s){return S.days[s]||(S.days[s]={})}
-function prune(s){const d=S.days[s];if(d&&!d.flow&&!d.mucus&&!d.temp&&!d.sex&&!d.note&&!(d.symptoms||[]).length)delete S.days[s]}
+function prune(s){const d=S.days[s];if(d&&!d.flow&&!d.mucus&&!d.temp&&!d.sex&&!d.folic&&!d.note&&!(d.symptoms||[]).length)delete S.days[s]}
 function seg(list,cur,a,cls=''){return `<div class="seg ${cls}">${list.map(([v,l])=>`<button type="button" data-a="${a}" data-v="${esc(v)}" aria-pressed="${cur===v}">${esc(l)}</button>`).join('')}</div>`}
 function shDay({date}){
   const n=num(date),m=model(),c=m.cycleOf(n),d=S.days[date]||{};
@@ -653,6 +694,15 @@ const DAILY=[
  ['🚭','Nicht rauchen, und dein Partner am besten auch nicht. Das hilft euch beiden.'],
  ['🌱','Etwa 1 von 3 Frauen wird im ersten Monat schwanger, mehr als 8 von 10 innerhalb eines Jahres.']];
 const FERT_TIP=['☀️','Jetzt sind deine fruchtbarsten Tage. Sex heute und in den nächsten 2 Tagen gibt die besten Chancen. Spermien überleben bis zu 7 Tage.'];
+function folicStreak(){
+  let n=num(todayS());if(!(S.days[str(n)]||{}).folic)n--;
+  let k=0;while((S.days[str(n)]||{}).folic){k++;n--}
+  return k;
+}
+function folicCard(){
+  const on=!!(S.days[todayS()]||{}).folic,k=folicStreak();
+  return `<button class="folic ${on?'on':''}" data-a="folic" aria-pressed="${on}"><span class="tick" aria-hidden="true">${on?'✓':''}</span><span><b>${on?'Folsäure genommen':'Folsäure heute genommen?'}</b><span class="muted small">${k?`${k} ${k===1?'Tag':'Tage'} in Folge`:'Tippen zum Abhaken'}</span></span></button>`;
+}
 function tipCard(m){
   const cur=m.cur?dayPhase(m,m.cur,m.T).p:null;
   const[e,t]=cur==='fert'?FERT_TIP:DAILY[m.T%DAILY.length];
@@ -692,6 +742,12 @@ const TIPS=[
   'Bewegung und genug Schlaf helfen gegen Stress.',
   'Stress kann die Lust senken. Plant Zeit nur für euch zwei ein, damit Sex keine Pflicht wird.',
   'Nach dem Absetzen der Verhütung kann es einige Wochen dauern, bis sich dein Zyklus eingependelt hat.']],
+ ['👨','Für deinen Partner',[
+  'Neue Spermien brauchen etwa zwei bis drei Monate, bis sie reif sind. Was er jetzt ändert, wirkt also mit etwas Verzögerung.',
+  'Nicht rauchen, wenig Alkohol und gesund essen tun den Spermien gut.',
+  'Hitze kann die Spermienbildung stören. Ganz auf Sauna oder heiße Bäder verzichten muss er aber meist nicht, nur nicht übertreiben.',
+  'Ein gesundes Gewicht, Bewegung und genug Schlaf helfen auch ihm.',
+  'Klappt es nach einem Jahr nicht, gehört auch ein Spermiogramm beim Urologen oder Andrologen zur Abklärung. Das ist schnell gemacht.']],
  ['🩺','Wann zur Frauenärztin',[
   'Am besten schon jetzt zu einem Check-up, um Impfungen, Medikamente und Vorerkrankungen zu besprechen. Setz verschriebene Medikamente nicht ohne Rücksprache ab.',
   'Wenn es nach einem Jahr mit regelmäßigem Sex nicht geklappt hat, oder schon früher, wenn du über 35 bist.',
@@ -700,6 +756,28 @@ const TIP_SRC=[['NHS: Trying to get pregnant','https://www.nhs.uk/pregnancy/tryi
 function shTips(){
   return head('Tipps für deinen Kinderwunsch')+TIPS.map(([e,t,l],i)=>`<details class="tipd" ${i===0?'open':''}><summary><span aria-hidden="true">${e}</span>${esc(t)}</summary><ul>${l.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></details>`).join('')+
   `<p class="muted small" style="margin-top:18px">Allgemeine Tipps, keine ärztliche Beratung. Quellen:</p><ul class="src">${TIP_SRC.map(([n,u])=>`<li><a href="${u}" target="_blank" rel="noopener noreferrer">${esc(n)}</a></li>`).join('')}</ul>`;
+}
+function shDoc(){
+  const m=model(),cs=m.cycles.slice().reverse();
+  const posDays=m.cycles.filter(c=>c.pos!=null).map(c=>c.pos-c.start+1);
+  const avg=a=>a.length?Math.round(a.reduce((x,y)=>x+y,0)/a.length):null;
+  const lens=m.done.map(c=>c.len);
+  const rows=cs.map(c=>{const l=c.len??(m.T-c.start+1);return `<tr><td>${esc(fs(c.start))}</td><td>${c.len!=null?l+' Tage':l+' Tage, läuft'}</td><td>${c.flows.length||'–'}</td><td>${c.pos!=null?'Tag '+(c.pos-c.start+1):'–'}</td></tr>`}).join('');
+  const sex=Object.entries(S.days).filter(([k,d])=>d.sex&&m.cur&&num(k)>=m.cur.start).length;
+  const fol=Object.values(S.days).filter(d=>d.folic).length;
+  return head('Übersicht für die Frauenärztin','Stand '+fD.format(new Date(m.T*864e5))+' '+new Date().getFullYear())+
+  `<div class="doc">
+   <dl>
+    <dt>Zykluslänge im Schnitt</dt><dd>${m.avgLen?m.avgLen+' Tage'+(Math.min(...lens)!==Math.max(...lens)?` (${Math.min(...lens)} bis ${Math.max(...lens)})`:''):'noch unbekannt'}</dd>
+    <dt>Blutung im Schnitt</dt><dd>${m.avgBleed?m.avgBleed+' Tage':'–'}</dd>
+    <dt>Positiver LH-Test im Schnitt</dt><dd>${posDays.length?'Zyklustag '+avg(posDays):'–'}</dd>
+    <dt>Folsäure eingetragen</dt><dd>${fol} ${fol===1?'Tag':'Tage'}</dd>
+    ${m.cur?`<dt>Sex im aktuellen Zyklus</dt><dd>${sex}-mal</dd>`:''}
+   </dl>
+   ${rows?`<table><thead><tr><th>Beginn</th><th>Länge</th><th>Blutung</th><th>LH positiv</th></tr></thead><tbody>${rows}</tbody></table>`:'<p class="muted">Noch keine Zyklen eingetragen.</p>'}
+   <p class="muted small" style="margin-top:12px">Selbst erfasst mit Ovulationstests (LH). Ohne Gewähr.</p>
+  </div>
+  <button class="btn full noprint" style="margin-top:16px" data-a="print">Drucken oder als PDF speichern</button>`;
 }
 function shHelp(){
   const it=['Nicht zur Verhütung geeignet.','Testen: Streifen bis zur Max-Linie 5 bis 10 Sekunden eintauchen, flach hinlegen und nach 5 Minuten ablesen, nicht später.','Ein positiver Test bedeutet: Eisprung wahrscheinlich in den nächsten 24 bis 48 Stunden.','Am besten zwischen 10 und 20 Uhr testen, nicht mit dem ersten Morgenurin. Etwa 2 Stunden vorher wenig trinken.','Mindestens 5 Tage testen oder bis der Test positiv ist. Ist die Zykluslänge unbekannt, ab Zyklustag 5.','Bei unregelmäßigen oder ungewöhnlich langen Zyklen zum Arzt oder zur Ärztin gehen.','Manche Medikamente gegen Unfruchtbarkeit können das Ergebnis verfälschen.','Die Prognosen hier sind Schätzungen und keine Diagnose.'];
@@ -788,6 +866,9 @@ const A={
   wipe(){openSheet({t:'wipe'})},
   help(){openSheet({t:'help'})},
   tips(){openSheet({t:'tips'})},
+  folic(){const t=todayS(),d=dayOf(t);d.folic=!d.folic;prune(t);persist();renderApp()},
+  doc(){openSheet({t:'doc'})},
+  print(){window.print()},
   skipinstall(){skipInstall=true;renderSetup()},
 };
 function b64(u8){let s='';for(let i=0;i<u8.length;i+=0x8000)s+=String.fromCharCode.apply(null,u8.subarray(i,i+0x8000));return btoa(s)}
