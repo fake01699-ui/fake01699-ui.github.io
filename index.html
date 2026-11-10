@@ -27,6 +27,7 @@
 body[data-phase=bleed]{--bg1:#FFD9E3;--bg2:#FFF3F0;--blob:#FFB5C9;--accent:#C92C5C;--accent2:#EE6A8F}
 body[data-phase=fol]{--bg1:#D4F2E4;--bg2:#F5FBF2;--blob:#BFEBD5;--accent:#27805F;--accent2:#4FB58F}
 body[data-phase=fert]{--bg1:#E6D6FF;--bg2:#FFE9F5;--blob:#D8B8FF;--accent:#7A3FE0;--accent2:#C766E0}
+body[data-phase=man]{--bg1:#D3ECF5;--bg2:#F1F8F6;--blob:#B5DDEB;--accent:#1F7A8C;--accent2:#3FA7A0}
 body[data-phase=lut]{--bg1:#DBE2FB;--bg2:#F4EFFB;--blob:#C3CDF5;--accent:#5A6BC8;--accent2:#8E9CE6}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html{-webkit-text-size-adjust:100%;background:var(--bg2)}
@@ -95,6 +96,29 @@ svg.fl{display:block;width:100%;height:auto;overflow:visible}
 .ph i{width:18px;height:18px;border-radius:50%;display:block}
 .ph.on{background:#fff;color:var(--ink);font-weight:700;box-shadow:0 3px 12px rgba(59,35,80,.12)}
 .ph-bleed i{background:linear-gradient(#F57C9B,#D93A68)}.ph-fol i{background:linear-gradient(#BDE6CF,#5FB795)}.ph-fert i{background:linear-gradient(#D27BEA,#7A3FE0)}.ph-lut i{background:linear-gradient(#C1C9F2,#7F8FDB)}
+.roles{display:grid;gap:10px;margin-bottom:22px}
+.roles button{display:grid;grid-template-columns:auto 1fr;column-gap:12px;text-align:left;background:rgba(255,255,255,.12);border-radius:20px;padding:14px 16px;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.3)}
+.roles button span{grid-row:span 2;font-size:30px;align-self:center}
+.roles button small{color:#E8DAF5;font-size:14px}
+.roles button[aria-checked=true]{background:#fff;color:#4A2675;box-shadow:none}
+.roles button[aria-checked=true] small{color:#6A5380}
+.mhero{position:relative;max-width:260px;margin:4px auto 0}
+.ring{display:block;width:100%;height:auto}
+.mring{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:0 46px}
+.mring b{font:400 64px/1 var(--serif)}
+.mring span{font-size:14px;color:var(--soft);margin-top:4px}
+.mintro{text-align:center;color:var(--soft);font-size:15px;max-width:340px;margin:12px auto 18px}
+.mcard{background:var(--card);border-radius:24px;padding:14px 16px}
+.mh{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}
+.mh h2{font:italic 400 24px var(--serif)}
+.chk{display:flex;gap:12px;align-items:center;width:100%;text-align:left;padding:10px 0;min-height:52px;border-top:1px solid var(--line)}
+.chk .ce{font-size:20px}
+.chk.on .tick{background:linear-gradient(120deg,var(--accent),var(--accent2));box-shadow:none}
+.week{list-style:none;margin:12px 0 2px;padding:0;display:grid;grid-template-columns:repeat(7,1fr);text-align:center;font-size:12px;color:var(--soft)}
+.week i{display:block;width:26px;height:26px;margin:0 auto 3px;border-radius:50%;background:conic-gradient(var(--accent) calc(var(--p)*360deg),var(--line) 0)}
+.week i.full{background:linear-gradient(120deg,var(--accent),var(--accent2))}
+.supp{display:flex;justify-content:space-between;align-items:center;min-height:46px;border-bottom:1px solid var(--line)}
+.supp+form,.f>p+form{margin-top:10px}
 .folic{display:flex;gap:14px;align-items:center;width:100%;text-align:left;margin-top:18px;background:var(--card);border-radius:24px;padding:14px 18px;min-height:64px}
 .folic b{display:block}
 .folic .small{display:block}
@@ -260,6 +284,7 @@ textarea{min-height:92px;resize:vertical}
 <linearGradient id="g-spot" x1="0" y1="1" x2="0" y2="0"><stop stop-color="#F9C9D6"/><stop offset="1" stop-color="#FDE6EC"/></linearGradient>
 <linearGradient id="g-fert" x1="0" y1="1" x2="0" y2="0"><stop stop-color="#7A3FE0"/><stop offset="1" stop-color="#D27BEA"/></linearGradient>
 <linearGradient id="g-plan" x1="0" y1="1" x2="0" y2="0"><stop stop-color="#E8DCFF"/><stop offset="1" stop-color="#F8F3FF"/></linearGradient>
+<linearGradient id="g-man" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#1F7A8C"/><stop offset="1" stop-color="#5CC2A6"/></linearGradient>
 <linearGradient id="g-fol" x1="0" y1="1" x2="0" y2="0"><stop stop-color="#5FB795"/><stop offset="1" stop-color="#BDE6CF"/></linearGradient>
 <linearGradient id="g-lut" x1="0" y1="1" x2="0" y2="0"><stop stop-color="#7F8FDB"/><stop offset="1" stop-color="#C1C9F2"/></linearGradient>
 </defs></svg>
@@ -476,7 +501,7 @@ function phaseBar(m){
   return `<ol class="phases" aria-label="Phasen deines Zyklus">${items}</ol>
   <div class="mood"><span class="emo" aria-hidden="true">${emo}</span><div><b>${head}</b> <span class="en" role="img" aria-label="Energie ${lvl} von 4">${bars}</span><p>${feel}</p></div></div>`;
 }
-const PHASE_TOP={bleed:'#FFD9E3',fol:'#D4F2E4',fert:'#E6D6FF',lut:'#DBE2FB'};
+const PHASE_TOP={bleed:'#FFD9E3',fol:'#D4F2E4',fert:'#E6D6FF',lut:'#DBE2FB',man:'#D3ECF5'};
 function setPhase(p){
   if(p)document.body.dataset.phase=p;else delete document.body.dataset.phase;
   $('meta[name=theme-color]').content=p?PHASE_TOP[p]:'#2F1A4A';
@@ -512,6 +537,8 @@ function flower(m,c,N,opt={}){
   return `<svg class="fl ${opt.bloom?'bloom':''}" viewBox="0 0 360 360" ${opt.mini?'aria-hidden="true"':'role="group" aria-label="Dein Zyklus als Blüte"'}>${g}${last}${center}</svg>`;
 }
 const ICON={
+ mtipps:'<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.6 10.8c.6.5 1 1.2 1 2V17h5.2v-1.2c0-.8.4-1.5 1-2A6 6 0 0 0 12 3z"/>',
+ mset:'<circle cx="12" cy="12" r="3"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/>',
  heute:'<circle cx="12" cy="12" r="2.6"/><path d="M12 9.4c-2-2.2-2-4.6 0-6.9 2 2.3 2 4.7 0 6.9zM12 14.6c2 2.2 2 4.6 0 6.9-2-2.3-2-4.7 0-6.9zM9.4 12c-2.2 2-4.6 2-6.9 0 2.3-2 4.7-2 6.9 0zM14.6 12c2.2-2 4.6-2 6.9 0-2.3 2-4.7 2-6.9 0z"/>',
  kal:'<rect x="3.5" y="5" width="17" height="15.5" rx="4"/><path d="M3.5 10h17M8 2.8v4M16 2.8v4"/>',
  tests:'<rect x="8.5" y="2.5" width="7" height="19" rx="3"/><path d="M10.5 8h3M10.5 13h3"/>',
@@ -519,13 +546,103 @@ const ICON={
 const ic=k=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICON[k]}</svg>`;
 function greet(){const h=new Date().getHours();return h<11?'Guten Morgen':h<18?'Hallo':'Guten Abend'}
 const page=(body,title)=>`<div class="wrap"><div class="top"><h1>${title||greet()}</h1><button class="lockb" data-a="lock" aria-label="Abmelden"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><rect x="5" y="10.5" width="14" height="10" rx="3.5"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></svg></button></div>${body}</div>
-<nav class="tabs" aria-label="Bereiche">${[['heute','Heute'],['kal','Kalender'],['tests','Tests'],['verlauf','Verlauf']].map(([k,l])=>`<button data-a="tab" data-v="${k}" ${tab===k?'aria-current="page"':''}>${ic(k)}${l}</button>`).join('')}</nav>`;
+<nav class="tabs" aria-label="Bereiche">${(isMan()?[['heute','Heute'],['mtipps','Tipps'],['mset','Einstellungen']]:[['heute','Heute'],['kal','Kalender'],['tests','Tests'],['verlauf','Verlauf']]).map(([k,l])=>`<button data-a="tab" data-v="${k}" ${tab===k?'aria-current="page"':''}>${ic(k)}${l}</button>`).join('')}</nav>`;
+
+
+/* ---------- Ansicht für den Partner ---------- */
+const isMan=()=>S&&S.role==='mann';
+const HABITS=[['rauch','🚭','Nicht geraucht'],['alk','💧','Heute ohne Alkohol'],['gem','🥦','Obst und Gemüse gegessen'],['beweg','🏃','Bewegt, aber nicht übertrieben'],['hitze','❄️','Hitze vermieden, Laptop auf dem Tisch'],['schlaf','😴','Gut geschlafen']];
+const SPERM_DAYS=90;
+function manDay(t){return S.days[t]||{}}
+function manDone(t){const d=manDay(t);return (d.hb||[]).length+(d.sp||[]).length}
+function manTotal(){return HABITS.length+(S.supps||[]).length}
+function ring(p){
+  const R=88,C=2*Math.PI*R,o=(C*(1-Math.min(1,p))).toFixed(1);
+  return `<svg class="ring" viewBox="0 0 200 200" aria-hidden="true"><circle cx="100" cy="100" r="${R}" fill="none" stroke="rgba(255,255,255,.7)" stroke-width="16"/><circle cx="100" cy="100" r="${R}" fill="none" stroke="url(#g-man)" stroke-width="16" stroke-linecap="round" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${o}" transform="rotate(-90 100 100)"/></svg>`;
+}
+const MAN_DAILY=[
+ ['🧬','Spermien brauchen etwa 74 Tage zum Reifen, mit dem Weg nach draußen rund drei Monate. Was du heute änderst, zählt also später.'],
+ ['🍺','Mehr als sieben alkoholische Getränke pro Woche können die Spermienqualität verschlechtern.'],
+ ['💻','Laptop auf den Tisch statt auf den Schoß. Hitze an den Hoden kann die Spermienbildung stören.'],
+ ['📱','Handy eher nicht dauernd in der Hosentasche tragen. Die Studienlage ist unsicher, vorsichtshalber schadet es nicht.'],
+ ['🏋️','Sport ist gut, Leistungssport mit sehr viel Training kann das Testosteron senken.'],
+ ['💞','Alle 2 bis 3 Tage Sex über den ganzen Zyklus gibt die besten Chancen. Ihr müsst nicht alles auf ihren Eisprung legen.'],
+ ['🤍','Frag sie, wie es ihr geht, besonders in den zwei Wochen Warten nach dem Eisprung. Diese Zeit ist oft die schwerste.'],
+ ['🚭','Rauchen schädigt Spermien und ihr Erbgut. Aufhören hilft schon nach wenigen Monaten.'],
+ ['🧪','Ein Spermiogramm ist schnell gemacht und zeigt, wie es um deine Spermien steht. Spätestens nach einem Jahr ohne Erfolg gehört es dazu.']];
+const MAN_TIPS=[
+ ['🧬','Spermien gesund halten',[
+  'Spermien brauchen etwa 74 Tage zum Reifen und dann noch einige Tage für den Weg nach draußen. Änderungen wirken deshalb erst nach etwa drei Monaten.',
+  'Nicht rauchen. Rauchen schädigt Spermien und ihr Erbgut.',
+  'Alkohol nur wenig, mehr als sieben Getränke pro Woche können die Spermienqualität verschlechtern.',
+  'Ein gesundes Gewicht hilft. Viel Bauchfett bringt die Hormone durcheinander.',
+  'Bewegung ja, Leistungssport mit extrem viel Training eher nicht. Er kann das Testosteron senken.',
+  'Keine Anabolika oder Testosteron-Präparate. Danach kann es Monate dauern, bis die Spermienbildung wieder normal läuft.']],
+ ['🔥','Hitze und Alltag',[
+  'Die Hoden mögen es kühler als der restliche Körper. Laptop auf den Tisch, nicht auf den Schoß.',
+  'Lockere Boxershorts statt enger Slips.',
+  'Sauna und heiße Bäder schaden bei gesunden Männern meist nicht, sehr häufige und lange Hitze lieber vermeiden.',
+  'Das Handy vorsichtshalber eher nicht dauernd in der Hosentasche tragen. Ob es wirklich schadet, ist nicht sicher belegt.']],
+ ['💊','Nahrungsergänzung, ehrlich gesagt',[
+  'Für Männer gibt es keine allgemeine Empfehlung für Nahrungsergänzung beim Kinderwunsch.',
+  'In einer großen Studie mit über 2.000 Männern haben Zink und Folsäure weder die Spermien noch die Geburtenrate verbessert. Dafür gab es mehr Magenbeschwerden.',
+  'Auch Präparate mit Antioxidantien wie Coenzym Q10, L-Carnitin oder Vitamin E haben in Studien kaum Nutzen gezeigt.',
+  'Hast du einen nachgewiesenen Mangel, etwa an Vitamin D, oder empfiehlt dein Arzt etwas, trag es unter Einstellungen ein und hake es hier täglich ab.',
+  'Dein Geld steckst du besser in gutes Essen: viel Gemüse, Obst, Vollkorn, Nüsse und Fisch.']],
+ ['🤍','Für sie da sein',[
+  'Sie nimmt täglich Folsäure. Erinnert euch gegenseitig, zum Beispiel beim Frühstück.',
+  'Alle 2 bis 3 Tage Sex über den ganzen Zyklus gibt die besten Chancen. Druck auf bestimmte Tage nimmt oft die Lust, für euch beide.',
+  'Die zwei Wochen nach dem Eisprung sind oft die schwerste Zeit. Frag nach, lenk ab, plant etwas Schönes.',
+  'Ist ein Test negativ, ist das kein Versagen. Mehr als 8 von 10 Paaren klappt es innerhalb eines Jahres.',
+  'Begleite sie zu Terminen bei der Frauenärztin, wenn sie das möchte.']],
+ ['🩺','Wann zum Arzt',[
+  'Wenn es nach einem Jahr mit regelmäßigem Sex nicht geklappt hat, oder früher, wenn sie über 35 ist.',
+  'Dann gehört ein Spermiogramm beim Urologen oder Andrologen dazu. Etwa die Hälfte der Ursachen liegt beim Mann.',
+  'Früher gehen, wenn du Probleme mit den Hoden hattest, etwa einen Hodenhochstand, eine Krampfader am Hoden oder eine Chemotherapie.']]];
+const MAN_SRC=[['aponet: Folsäure und Zink auch für Männer?','https://www.aponet.de/artikel/kinderwunsch-folsaeure-und-zink-auch-fuer-maenner-11779'],['DocCheck: SUMMER-Studie zu Spermien-Präparaten','https://www.doccheck.com/de/detail/articles/52003-sperma-supplement-doch-nur-premium-placebo'],['Apotheken Umschau: Spermienqualität verbessern','https://www.apotheken-umschau.de/familie/kinderwunsch/schwanger-werden/was-die-spermienqualitaet-verbessert-794035.html'],['aponet: Spermienqualität fördern','https://www.aponet.de/artikel/kinderwunsch-so-koennen-maenner-ihre-spermienqualitaet-foerdern-32589'],['NHS: Trying to get pregnant','https://www.nhs.uk/pregnancy/trying-for-a-baby/trying-to-get-pregnant/']];
+function manStreak(){
+  let n=num(todayS());const full=t=>manDone(t)>=manTotal();
+  if(!full(str(n)))n--;let k=0;while(full(str(n))){k++;n--}return k;
+}
+function vManHeute(){
+  const T=num(todayS()),start=S.manStart?num(S.manStart):T,d=T-start,left=Math.max(0,SPERM_DAYS-d);
+  const t=todayS(),day=manDay(t),done=manDone(t),tot=manTotal();
+  const items=HABITS.map(([k,e,l])=>{const on=(day.hb||[]).includes(k);return `<button class="chk ${on?'on':''}" data-a="mhab" data-v="${k}" aria-pressed="${on}"><span class="tick" aria-hidden="true">${on?'✓':''}</span><span class="ce" aria-hidden="true">${e}</span>${esc(l)}</button>`}).join('')+
+   (S.supps||[]).map(x=>{const on=(day.sp||[]).includes(x.id);return `<button class="chk ${on?'on':''}" data-a="msup" data-v="${esc(x.id)}" aria-pressed="${on}"><span class="tick" aria-hidden="true">${on?'✓':''}</span><span class="ce" aria-hidden="true">💊</span>${esc(x.name)}</button>`}).join('');
+  const week=[6,5,4,3,2,1,0].map(i=>{const k=str(T-i),n=manDone(k),p=tot?n/tot:0;return `<li><i style="--p:${p.toFixed(2)}" class="${p>=1?'full':''}"></i><span>${df({weekday:'short'}).format(new Date((T-i)*864e5)).slice(0,2)}</span></li>`}).join('');
+  const[e,tip]=MAN_DAILY[T%MAN_DAILY.length];
+  const k=manStreak();
+  return page(`<div class="mhero">${ring(d/SPERM_DAYS)}<div class="mring"><b>${left?left:'✓'}</b><span>${left?'Tage bis zu ganz neuen Spermien':'Neue Spermien sind da'}</span></div></div>
+   <p class="mintro">${left?`Seit dem ${f(start)} bist du dabei. Ab dem ${f(start+SPERM_DAYS)} sind alle deine Spermien unter deinem neuen Lebensstil entstanden.`:`Seit dem ${f(start)} bist du dabei. Alle deine Spermien sind jetzt unter deinem neuen Lebensstil entstanden. Bleib dran!`}</p>
+   <div class="mcard"><div class="mh"><h2>Heute</h2><span class="muted small">${done} von ${tot}${k?`, ${k} ${k===1?'Tag':'Tage'} in Folge`:''}</span></div>${items}
+   <ol class="week" aria-label="Die letzten 7 Tage">${week}</ol></div>
+   <button class="tipcard" data-a="tab" data-v="mtipps"><span class="tipe" aria-hidden="true">${e}</span><span><b>Tipp für heute</b><span class="tipt">${esc(tip)}</span><span class="tipm">Alle Tipps für dich</span></span></button>`);
+}
+function vManTipps(){
+  return page(MAN_TIPS.map(([e,t,l],i)=>`<details class="tipd" ${i===0?'open':''}><summary><span aria-hidden="true">${e}</span>${esc(t)}</summary><ul>${l.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></details>`).join('')+
+   `<p class="muted small" style="margin-top:18px">Allgemeine Tipps, keine ärztliche Beratung. Quellen:</p><ul class="src">${MAN_SRC.map(([n,u])=>`<li><a href="${u}" target="_blank" rel="noopener noreferrer">${esc(n)}</a></li>`).join('')}</ul>`,'Tipps für dich');
+}
+function vManSet(){
+  const days=S.lastBackup?Math.floor(num(todayS())-num(S.lastBackup)):null;
+  return page(`<div class="mcard">
+   <label class="f"><span>Dabei seit</span><input type="date" data-i="manStart" max="${todayS()}" value="${esc(S.manStart||todayS())}"><small class="muted">Ab diesem Tag zählt der Spermien-Countdown.</small></label>
+   <div class="f"><span class="lab">Präparate zum Abhaken</span>
+    ${(S.supps||[]).map(x=>`<div class="supp"><span>💊 ${esc(x.name)}</span><button class="link" data-a="msupdel" data-v="${esc(x.id)}">Entfernen</button></div>`).join('')||'<p class="muted small" style="margin-bottom:8px">Nur eintragen, was dein Arzt empfohlen hat oder was du wegen eines Mangels nimmst.</p>'}
+    <form data-f="msupadd" class="row" novalidate><input type="text" id="msn" placeholder="z. B. Vitamin D" maxlength="40"><button class="btn line" type="submit" style="flex:0 0 auto">Hinzufügen</button></form>
+   </div></div>
+   <div class="mcard" style="margin-top:14px">
+   <button class="st" style="border-top:0" data-a="backup">Backup erstellen<small>${days==null?'Noch kein Backup gemacht':days===0?'Letztes Backup heute':`Letztes Backup vor ${days} ${days===1?'Tag':'Tagen'}`}</small></button>
+   <button class="st" data-a="restore">Backup wiederherstellen</button>
+   <button class="st" data-a="pw">Passwort ändern</button>
+   <button class="st" data-a="wipe" style="color:#A81C49">Alle Daten löschen</button></div>`,'Einstellungen');
+}
 
 /* ---------- Ansichten ---------- */
 function renderApp(){
   const m=model();
-  setPhase(phaseOf(m));
-  const v={heute:vHeute,kal:vKal,tests:vTests,verlauf:vVerlauf}[tab](m);
+  let v;
+  if(isMan()){if(!['heute','mtipps','mset'].includes(tab))tab='heute';setPhase('man');v={heute:vManHeute,mtipps:vManTipps,mset:vManSet}[tab]()}
+  else{if(!['heute','kal','tests','verlauf'].includes(tab))tab='heute';setPhase(phaseOf(m));v={heute:vHeute,kal:vKal,tests:vTests,verlauf:vVerlauf}[tab](m)}
   const scroll=window.scrollY;
   $('#app').innerHTML=v;
   hydrate($('#app'));
@@ -616,7 +733,7 @@ function renderSheet(fresh){
 }
 const head=(t,sub)=>`<div class="sh"><div><h2>${esc(t)}</h2>${sub?`<p class="muted small">${esc(sub)}</p>`:''}</div><button class="link" data-a="close">Fertig</button></div>`;
 function dayOf(s){return S.days[s]||(S.days[s]={})}
-function prune(s){const d=S.days[s];if(d&&!d.flow&&!d.mucus&&!d.temp&&!d.sex&&!d.folic&&!d.note&&!(d.symptoms||[]).length)delete S.days[s]}
+function prune(s){const d=S.days[s];if(d&&!d.flow&&!d.mucus&&!d.temp&&!d.sex&&!d.folic&&!d.note&&!(d.hb||[]).length&&!(d.sp||[]).length&&!(d.symptoms||[]).length)delete S.days[s]}
 function seg(list,cur,a,cls=''){return `<div class="seg ${cls}">${list.map(([v,l])=>`<button type="button" data-a="${a}" data-v="${esc(v)}" aria-pressed="${cur===v}">${esc(l)}</button>`).join('')}</div>`}
 function shDay({date}){
   const n=num(date),m=model(),c=m.cycleOf(n),d=S.days[date]||{};
@@ -866,6 +983,10 @@ const A={
   wipe(){openSheet({t:'wipe'})},
   help(){openSheet({t:'help'})},
   tips(){openSheet({t:'tips'})},
+  mhab(e){const t=todayS(),d=dayOf(t),a=d.hb||(d.hb=[]),i=a.indexOf(e.dataset.v);i<0?a.push(e.dataset.v):a.splice(i,1);prune(t);persist();renderApp()},
+  msup(e){const t=todayS(),d=dayOf(t),a=d.sp||(d.sp=[]),i=a.indexOf(e.dataset.v);i<0?a.push(e.dataset.v):a.splice(i,1);prune(t);persist();renderApp()},
+  msupdel(e){S.supps=(S.supps||[]).filter(x=>x.id!==e.dataset.v);persist();renderApp()},
+  setrole(e){setupRole=e.dataset.v;renderSetup()},
   folic(){const t=todayS(),d=dayOf(t);d.folic=!d.folic;prune(t);persist();renderApp()},
   doc(){openSheet({t:'doc'})},
   print(){window.print()},
@@ -886,6 +1007,7 @@ document.addEventListener('input',e=>{
   const i=e.target.dataset.i;if(!i)return;const v=e.target.value;
   if(i==='temp'||i==='note'){const d=dayOf(SHEET.date);d[i]=v;prune(SHEET.date);persistSoon()}
   else if(i==='cycleLen'){S.settings.cycleLen=v?+v:null;persist()}
+  else if(i==='manStart'){if(v&&num(v)<=num(todayS())){S.manStart=v;persist()}}
   else if(i.startsWith('tf-'))TF[i.slice(3)]=v;
 });
 document.addEventListener('change',async e=>{
@@ -895,6 +1017,7 @@ document.addEventListener('change',async e=>{
   catch(err){console.error(err);TF.err='Dieses Foto ließ sich nicht öffnen. Wähl ein anderes aus.';renderSheet()}
 });
 const F={
+  async msupadd(){const n=$('#msn').value.trim();if(!n)return;(S.supps||(S.supps=[])).push({id:crypto.randomUUID(),name:n});await persist();renderApp()},
   async test(){
     const t=TF;
     if(!t.result){t.err='Wähl aus, ob der Test positiv, negativ oder ungültig ist.';renderSheet();return}
@@ -959,9 +1082,9 @@ const F={
     const dek=await crypto.subtle.generateKey({name:'AES-GCM',length:256},true,['encrypt','decrypt']);
     const meta=await wrap(dek,p1);
     await put('meta',meta);
-    KEY=await unwrap(meta,p1);S=blank();await persist();await remember(rm,KEY);bloomNext=true;
+    KEY=await unwrap(meta,p1);S=blank();S.role=setupRole;if(setupRole==='mann'){S.manStart=todayS();S.supps=[]}await persist();await remember(rm,KEY);bloomNext=true;tab='heute';
     if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(()=>{});
-    setupErr='';lastActive=Date.now();renderApp();openSheet({t:'first'});
+    setupErr='';lastActive=Date.now();renderApp();if(setupRole!=='mann')openSheet({t:'first'});
   },
 };
 document.addEventListener('submit',e=>{
@@ -971,7 +1094,7 @@ document.addEventListener('submit',e=>{
 
 /* ---------- Anmeldung und Einrichtung ---------- */
 async function remember(on,k){remembered=false;if(!on){await del('remember');return}try{await put('remember',k);remembered=true}catch(e){console.error(e)}}
-let loginErr='',setupErr='',skipInstall=false;
+let loginErr='',setupErr='',skipInstall=false,setupRole='frau';
 const bigStrip=`<div class="gatefl">${flowerPlain('')}</div>`;
 function gate(html){setPhase(null);$('#app').innerHTML=`<div class="gate"><div class="in">${bigStrip}${html}</div></div>`}
 function renderLogin(){
@@ -994,7 +1117,12 @@ function renderInstall(){
   <button class="link" data-a="skipinstall">Nur im Browser ausprobieren</button>`);
 }
 function renderSetup(){
-  gate(`<h1>Zyklus</h1><p>Leg ein Passwort fest. Damit werden deine Einträge und Fotos verschlüsselt, und sie bleiben auf diesem Gerät.</p>
+  gate(`<h1>Zyklus</h1><p>Wer nutzt die Seite auf diesem Handy?</p>
+  <div class="roles" role="radiogroup" aria-label="Wer nutzt die Seite?">
+   <button type="button" role="radio" aria-checked="${setupRole==='frau'}" data-a="setrole" data-v="frau"><span aria-hidden="true">🌸</span><b>Ich, mit Zyklus</b><small>Periode, Ovulationstests und fruchtbare Tage</small></button>
+   <button type="button" role="radio" aria-checked="${setupRole==='mann'}" data-a="setrole" data-v="mann"><span aria-hidden="true">🌿</span><b>Mein Partner</b><small>Tipps für gesunde Spermien und tägliches Abhaken</small></button>
+  </div>
+  <p>Leg ein Passwort fest. Damit werden alle Einträge verschlüsselt, und sie bleiben auf diesem Gerät.</p>
   <form data-f="setup" novalidate>
    <input type="text" autocomplete="username" value="Zyklus" hidden>
    <label class="f"><span>Passwort, mindestens 8 Zeichen</span><input type="password" id="s1" autocomplete="new-password"></label>
