@@ -309,7 +309,7 @@ function model(){
   const done=cycles.filter(c=>c.len!=null&&c.len>=15&&c.len<=60).slice(-6);
   const avg=a=>a.length?Math.round(a.reduce((x,y)=>x+y,0)/a.length):null;
   const avgLen=avg(done.map(c=>c.len));
-  const L=avgLen??S.settings.cycleLen??null;
+  const L=avgLen??null;
   const avgBleed=avg(cycles.slice(0,-1).slice(-6).map(c=>c.flows.length).filter(n=>n>0));
   const cur=cycles.filter(c=>c.start<=T).pop()||null;
   let nextStart=null,planFrom=null,planEnd=null;
@@ -493,7 +493,7 @@ function vVerlauf(m){
   body+='<div class="minis">'+cs.map(c=>{const l=c.len??(m.T-c.start+1);return `<div class="mini">${flower(m,c,Math.max(l,1),{mini:true})}<b>${l} ${l===1?'Tag':'Tage'}</b>${fs(c.start)}${c.end!=null?' bis '+fs(c.end):', läuft gerade'}</div>`}).join('')+'</div>';
   const days=S.lastBackup?Math.floor(m.T-num(S.lastBackup)):null;
   body+=`<details id="set" ${settingsOpen?'open':''}><summary>Einstellungen und Backup</summary>
-  <label class="f" style="margin-top:6px"><span>Übliche Zykluslänge</span><select data-i="cycleLen"><option value="">Weiß ich nicht</option>${Array.from({length:20},(_,i)=>21+i).map(n=>`<option value="${n}" ${S.settings.cycleLen===n?'selected':''}>${n} Tage</option>`).join('')}</select>${m.avgLen?`<small class="muted">Wird nicht mehr gebraucht, weil dein eigener Durchschnitt da ist.</small>`:''}</label>
+  <p class="muted small" style="margin:4px 0 8px">Deine Zykluslänge rechnet die App selbst aus, sobald ein Zyklus vollständig ist.</p>
   <button class="st" data-a="backup">Backup erstellen<small>${days==null?'Noch kein Backup gemacht':days===0?'Letztes Backup heute':`Letztes Backup vor ${days} ${days===1?'Tag':'Tagen'}`}</small></button>
   <button class="st" data-a="restore">Backup wiederherstellen</button>
   <button class="st" data-a="pw">Passwort ändern</button>
@@ -583,8 +583,8 @@ function shHelp(){
 function shFirst(s){
   return head('Dein Start')+`<form data-f="first" novalidate>
   <label class="f"><span>Erster Tag deiner letzten Blutung</span><input type="date" id="fd" max="${todayS()}" value="${todayS()}"></label>
-  <label class="f"><span>Wie lang ist dein Zyklus meistens?</span><select id="fl"><option value="">Weiß ich nicht</option>${Array.from({length:20},(_,i)=>21+i).map(n=>`<option value="${n}" ${n===S.settings.cycleLen?'selected':''}>${n} Tage</option>`).join('')}</select></label>
-  <p class="muted small" style="margin-bottom:14px">Daraus ergibt sich dein erster Testtag. Diese Seite und der Test eignen sich nicht zur Verhütung.</p>
+  
+  <p class="muted small" style="margin-bottom:14px">Du testest ab Zyklustag 5, bis ein Test positiv ist. Mit jeder neuen Blutung rechnet die App alles neu. Diese Seite und der Test eignen sich nicht zur Verhütung.</p>
   <button class="btn full" type="submit">Speichern</button></form>`;
 }
 
@@ -702,8 +702,8 @@ const F={
     dropPreview();A.close();
   },
   async first(){
-    const d=$('#fd').value,l=$('#fl').value;
-    S.settings.cycleLen=l?+l:null;
+    const d=$('#fd').value;
+    S.settings.cycleLen=null;
     if(d&&num(d)<=num(todayS()))dayOf(d).flow='mittel';
     await persist();closeSheet();
   },
