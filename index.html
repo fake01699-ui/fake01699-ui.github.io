@@ -316,7 +316,7 @@ function model(){
   if(cur){
     if(L)nextStart=cur.start+L;
     planFrom=cur.start+testStart(L)-1;
-    planEnd=planFrom+9; if(nextStart!=null)planEnd=Math.min(planEnd,nextStart-1);
+    planEnd=planFrom+(L?9:19); if(nextStart!=null)planEnd=Math.min(planEnd,nextStart-1);
   }
   const fert=new Set();cycles.forEach(c=>{if(c.pos!=null)[0,1,2].forEach(i=>fert.add(c.pos+i))});
   const pred=new Set();
