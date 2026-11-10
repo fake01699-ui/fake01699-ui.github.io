@@ -90,6 +90,15 @@ svg.fl{display:block;width:100%;height:auto;overflow:visible}
 .keys{list-style:none;margin:12px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:6px 14px;justify-content:center;font-size:14px;color:var(--soft)}
 .keys li{display:flex;align-items:center;gap:6px}
 .keys i{width:12px;height:12px;border-radius:50%;display:block}
+.phases{list-style:none;margin:16px 0 0;padding:4px;display:grid;grid-template-columns:repeat(4,1fr);gap:4px;background:var(--card);border-radius:22px}
+.ph{display:flex;flex-direction:column;align-items:center;gap:5px;padding:8px 2px;border-radius:18px;font-size:13px;color:var(--soft);line-height:1.15}
+.ph i{width:18px;height:18px;border-radius:50%;display:block}
+.ph.on{background:#fff;color:var(--ink);font-weight:700;box-shadow:0 3px 12px rgba(59,35,80,.12)}
+.ph-bleed i{background:linear-gradient(#F57C9B,#D93A68)}.ph-fol i{background:linear-gradient(#BDE6CF,#5FB795)}.ph-fert i{background:linear-gradient(#D27BEA,#7A3FE0)}.ph-lut i{background:linear-gradient(#C1C9F2,#7F8FDB)}
+.phtext{margin:10px auto 0;max-width:340px;font-size:15px;color:var(--soft)}
+.phtext b{color:var(--ink)}
+.p.est{opacity:.42}
+.k-e{background:linear-gradient(90deg,#5FB795 50%,rgba(95,183,149,.4) 50%)}
 .k-b{background:#E0446F}.k-t{background:#E8DCFF;box-shadow:inset 0 0 0 1.5px #9D74EA}.k-f{background:linear-gradient(#7A3FE0,#D27BEA)}.k-p{background:#FFC83D}
 .chips{list-style:none;margin:16px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
 .chips li{background:var(--card);padding:7px 14px;border-radius:18px;font-size:15px}
@@ -373,14 +382,35 @@ function strip(r){
   return `<svg class="strip" viewBox="0 0 14 26" aria-hidden="true"><rect x=".75" y=".75" width="12.5" height="24.5" rx="5" fill="#fff" stroke="#3B2350" stroke-width="1.3"/>${ctl}${t}</svg>`;
 }
 const mark=i=>i.r==='positiv'?'<span class="mks">✦</span>':i.r==='negativ'?'<span class="mks n">•</span>':i.r?'<span class="mks n">×</span>':'<span class="mks"></span>';
-function phaseOf(m){
-  const c=m.cur;if(!c)return 'fol';
-  const T=m.T,fl=(S.days[str(T)]||{}).flow;
-  if(fl||c.flows.includes(T))return 'bleed';
-  if(m.fert.has(T))return 'fert';
-  if(c.pos!=null&&T>c.pos+2)return 'lut';
-  if((m.nextStart!=null&&T>=m.nextStart)||T>m.planEnd)return 'lut';
-  return 'fol';
+// Phase eines Tages: bleed, fol, fert, lut oder null (noch offen). est = geschätzt
+function dayPhase(m,c,n){
+  if(!c)return {p:null};
+  const fl=(S.days[str(n)]||{}).flow;
+  if(fl&&fl!=='spot'||c.flows.includes(n))return {p:'bleed'};
+  if(n>m.T&&n-c.start<(m.avgBleed||5)&&c.flows.length)return {p:'bleed',est:1};
+  if(c.pos!=null){
+    if(n>=c.pos&&n<=c.pos+2)return {p:'fert'};
+    return {p:n>c.pos+2?'lut':'fol',est:n>m.T};
+  }
+  if(m.L){
+    const ov=c.start+m.L-14;
+    if(n>=ov-1&&n<=ov+1)return {p:'fert',est:1};
+    return {p:n>ov+1?'lut':'fol',est:n>m.T||n>ov+1};
+  }
+  if(n>m.planEnd)return {p:null};
+  return {p:'fol',est:n>m.T};
+}
+function phaseOf(m){const d=dayPhase(m,m.cur,m.T);return d.p||'fol'}
+const PHASES={
+  bleed:['Periode','Deine Blutung. Die Gebärmutterschleimhaut löst sich, und ein neuer Zyklus beginnt.'],
+  fol:['Follikelphase','Ein Eibläschen reift heran, und das Östrogen steigt. In dieser Phase liegen deine Testtage.'],
+  fert:['Eisprung','Der LH-Anstieg löst den Eisprung aus. Das sind deine fruchtbarsten Tage.'],
+  lut:['Lutealphase','Nach dem Eisprung steigt das Progesteron. Diese Phase dauert meist etwa 12 bis 14 Tage bis zur nächsten Periode.']};
+function phaseBar(m){
+  const d=dayPhase(m,m.cur,m.T),cur=d.p;
+  const items=['bleed','fol','fert','lut'].map(k=>`<li class="ph ph-${k} ${k===cur?'on':''}" ${k===cur?'aria-current="step"':''}><i></i>${PHASES[k][0]}</li>`).join('');
+  const text=cur?`<p class="phtext"><b>${PHASES[cur][0]}${d.est?', geschätzt':''}.</b> ${PHASES[cur][1]}</p>`:`<p class="phtext"><b>Phase noch offen.</b> Ohne positiven Test und ohne bekannte Zykluslänge lässt sich das nicht sicher sagen.</p>`;
+  return `<ol class="phases" aria-label="Phasen deines Zyklus">${items}</ol>${text}`;
 }
 const PHASE_TOP={bleed:'#FFD9E3',fol:'#D4F2E4',fert:'#E6D6FF',lut:'#DBE2FB'};
 function setPhase(p){
@@ -389,11 +419,12 @@ function setPhase(p){
 }
 function petalClass(m,c,n,inf){
   const fl=inf.d.flow;
-  if(fl)return fl==='spot'?'b-spot':'b-'+fl;
-  if(m.fert.has(n))return 'fertile';
-  if(inf.cl==='plan')return 'plan';
-  if(n>m.T)return 'fut';
-  return c.pos!=null&&n>c.pos+2?'lut':'fol';
+  if(fl&&n<=m.T)return fl==='spot'?'b-spot':'b-'+fl;
+  if(n>=m.T&&inf.cl==='plan')return 'plan';
+  const d=dayPhase(m,c,n);
+  if(!d.p)return 'fut';
+  const k={bleed:'b-mittel',fol:'fol',fert:'fertile',lut:'lut'}[d.p];
+  return k+(d.est&&n>m.T?' est':'');
 }
 function petalPath(N){
   const r0=58,r1=174,L=r1-r0,w=Math.min(38,(2*Math.PI*118/N)/2*1.35);
@@ -449,7 +480,8 @@ function vHeute(m){
   if(dd.temp)list.push(String(dd.temp).replace('.',',')+' °C');
   (dd.symptoms||[]).forEach(x=>list.push(x));
   return page(`<div class="hero"><div class="bloomwrap">${flower(m,c,N,{day:cd,bloom:bloomNext})}</div>
-    <ul class="keys"><li><i class="k-b"></i>Blutung</li><li><i class="k-t"></i>Testtage</li><li><i class="k-f"></i>Fruchtbar</li><li><i class="k-p"></i>Positiv</li></ul>
+    ${phaseBar(m)}
+    <ul class="keys"><li><i class="k-t"></i>Testtag</li><li><i class="k-p"></i>Test positiv</li><li><i class="k-e"></i>Kräftig: war schon, blass: erwartet</li></ul>
     <h2>${esc(st.h)}</h2><p>${esc(st.d)}</p></div>
   <div class="acts"><button class="btn" data-a="newtest" data-v="${t}">Test eintragen</button><button class="btn line" data-a="day" data-v="${t}">Blutung eintragen</button></div>
   ${timerBtn()}
