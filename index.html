@@ -131,6 +131,10 @@ svg.fl{display:block;width:100%;height:auto;overflow:visible}
 .legend{list-style:none;margin:16px 4px 0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:9px 12px;font-size:14px}
 .legend li{display:flex;align-items:center;gap:8px}
 .legend .dot{width:20px;height:20px;flex:none}
+.cm{display:flex;gap:2px;align-items:center;height:14px}
+.cm .mks:empty{display:none}
+.heart{color:#E0446F;font-size:13px;line-height:14px}
+.legend .heart{width:20px;text-align:center;font-size:15px;flex:none}
 .legend .mks{width:20px;text-align:center;font-size:15px;flex:none}
 
 /* Tests */
@@ -351,6 +355,7 @@ function dayInfo(m,n){
   const lab=[f(n)];
   if(cd)lab.push('Zyklustag '+cd);
   if(d.flow)lab.push('Blutung: '+FLOW[d.flow]);
+  if(d.sex)lab.push('Sex');
   const r=bestResult(ts);
   if(r)lab.push('Test '+RES[r]);
   if(m.fert.has(n))lab.push('besonders fruchtbar');
@@ -504,13 +509,13 @@ function vKal(m){
   let cells=['Mo','Di','Mi','Do','Fr','Sa','So'].map(d=>`<div class="wd">${d}</div>`).join('');
   for(let i=0;i<lead;i++)cells+='<div class="cell other"></div>';
   for(let i=0;i<dim;i++){const n=first+i,inf=dayInfo(m,n);
-    cells+=`<button class="cell" data-a="day" data-v="${inf.s}" aria-label="${esc(inf.label)}"><span class="dot ${inf.cl} ${n===m.T?'now':''}">${i+1}</span>${mark(inf)}</button>`}
+    cells+=`<button class="cell" data-a="day" data-v="${inf.s}" aria-label="${esc(inf.label)}"><span class="dot ${inf.cl} ${n===m.T?'now':''}">${i+1}</span><span class="cm">${mark(inf)}${inf.d.sex?'<span class="heart">♥</span>':''}</span></button>`}
   return page(`<div class="mon"><button class="nav" data-a="mon" data-v="-1" aria-label="Vorheriger Monat">‹</button><h2>${fM.format(new Date(first*864e5))}</h2><button class="nav" data-a="mon" data-v="1" aria-label="Nächster Monat">›</button></div>
   <div class="grid">${cells}</div>
   <ul class="legend">
    <li><span class="dot f-mittel"></span>Blutung</li><li><span class="dot pred"></span>Blutung erwartet</li>
    <li><span class="dot plan"></span>Testtag</li><li><span class="dot fertd"></span>Besonders fruchtbar</li>
-   <li><span class="mks">✦</span>Test positiv</li><li><span class="mks n">•</span>Test negativ</li>
+   <li><span class="mks">✦</span>Test positiv</li><li><span class="mks n">•</span>Test negativ</li><li><span class="heart">♥</span>Sex</li>
   </ul>`,'Dein Kalender');
 }
 function vTests(m){
