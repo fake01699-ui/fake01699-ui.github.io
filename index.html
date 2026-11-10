@@ -551,10 +551,10 @@ const page=(body,title)=>`<div class="wrap"><div class="top"><h1>${title||greet(
 
 /* ---------- Ansicht für den Partner ---------- */
 const isMan=()=>S&&S.role==='mann';
-const HABITS=[['rauch','🚭','Nicht geraucht'],['alk','💧','Heute ohne Alkohol'],['gem','🥦','Obst und Gemüse gegessen'],['beweg','🏃','Bewegt, aber nicht übertrieben'],['hitze','❄️','Hitze vermieden, Laptop auf dem Tisch'],['schlaf','😴','Gut geschlafen']];
+const HABITS=[['rauch','🚭','Nicht geraucht'],['gem','🥦','Obst und Gemüse gegessen'],['beweg','🏃','Bewegt, aber nicht übertrieben'],['hitze','❄️','Hitze vermieden, Laptop auf dem Tisch'],['schlaf','😴','Gut geschlafen']];
 const SPERM_DAYS=90;
 function manDay(t){return S.days[t]||{}}
-function manDone(t){const d=manDay(t);return (d.hb||[]).length+(d.sp||[]).length}
+function manDone(t){const d=manDay(t),ids=(S.supps||[]).map(x=>x.id);return (d.hb||[]).filter(k=>HABITS.some(h=>h[0]===k)).length+(d.sp||[]).filter(k=>ids.includes(k)).length}
 function manTotal(){return HABITS.length+(S.supps||[]).length}
 function ring(p){
   const R=88,C=2*Math.PI*R,o=(C*(1-Math.min(1,p))).toFixed(1);
@@ -562,7 +562,6 @@ function ring(p){
 }
 const MAN_DAILY=[
  ['🧬','Spermien brauchen etwa 74 Tage zum Reifen, mit dem Weg nach draußen rund drei Monate. Was du heute änderst, zählt also später.'],
- ['🍺','Mehr als sieben alkoholische Getränke pro Woche können die Spermienqualität verschlechtern.'],
  ['💻','Laptop auf den Tisch statt auf den Schoß. Hitze an den Hoden kann die Spermienbildung stören.'],
  ['📱','Handy eher nicht dauernd in der Hosentasche tragen. Die Studienlage ist unsicher, vorsichtshalber schadet es nicht.'],
  ['🏋️','Sport ist gut, Leistungssport mit sehr viel Training kann das Testosteron senken.'],
@@ -574,7 +573,6 @@ const MAN_TIPS=[
  ['🧬','Spermien gesund halten',[
   'Spermien brauchen etwa 74 Tage zum Reifen und dann noch einige Tage für den Weg nach draußen. Änderungen wirken deshalb erst nach etwa drei Monaten.',
   'Nicht rauchen. Rauchen schädigt Spermien und ihr Erbgut.',
-  'Alkohol nur wenig, mehr als sieben Getränke pro Woche können die Spermienqualität verschlechtern.',
   'Ein gesundes Gewicht hilft. Viel Bauchfett bringt die Hormone durcheinander.',
   'Bewegung ja, Leistungssport mit extrem viel Training eher nicht. Er kann das Testosteron senken.',
   'Keine Anabolika oder Testosteron-Präparate. Danach kann es Monate dauern, bis die Spermienbildung wieder normal läuft.']],
