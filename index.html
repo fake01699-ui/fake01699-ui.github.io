@@ -151,6 +151,24 @@ svg.fl{display:block;width:100%;height:auto;overflow:visible}
 .rgex b{font-size:15px}.rgex b.positiv{color:#7A3FE0}.rgex b.ungueltig{color:#A81C49}
 .rgex small{grid-column:2;color:var(--soft);font-size:13px;line-height:1.25;margin-top:2px}
 .rgd{margin-bottom:16px}
+.tcv{display:flex;align-items:baseline;gap:10px;margin-bottom:10px}
+.tcv b{font:400 40px/1 var(--serif)}
+.tcv span{color:var(--soft);font-size:15px}
+.sl{display:block;margin-top:12px}
+.sl input{width:100%;margin:10px 0 2px;accent-color:#7A3FE0}
+.slx{display:block;position:relative;height:20px;margin:0 2px}
+.slx span{position:absolute;top:0;transform:translateX(-50%)}
+.mhint{margin:4px 0 8px;font-size:15px}
+.mbox{position:relative;border-radius:14px;overflow:hidden;background:var(--line);touch-action:manipulation}
+.mimg{display:block;width:100%;height:auto;cursor:crosshair}
+.mk2{position:absolute;transform:translate(-50%,-50%);width:26px;height:26px;border-radius:50%;background:#7A3FE0;color:#fff;font:700 13px/26px var(--sans);text-align:center;font-style:normal;box-shadow:0 0 0 3px #fff}
+.tcc{margin:0 0 14px;background:var(--card);border-radius:22px;padding:10px 10px 12px}
+.tcc svg{display:block;width:100%;height:auto}
+.tct{font:12px var(--sans);fill:var(--soft)}
+.tcp{font-weight:700;fill:#7A3FE0;font-size:13px}
+.tcc figcaption{font-size:13px;color:var(--soft);padding:2px 6px 0}
+.tcb{font-size:14px;color:var(--soft);font-weight:600}
+.cmpr small{display:block;font-size:12px;color:#7A3FE0;font-weight:600}
 .tipcard{display:flex;gap:14px;align-items:flex-start;width:100%;text-align:left;margin-top:18px;background:var(--card);border-radius:24px;padding:16px 18px}
 .tipe{font-size:34px;line-height:1}
 .tipcard b{display:block;font:italic 400 20px var(--serif);margin-bottom:3px}
@@ -647,17 +665,17 @@ function vManSet(){
 }
 
 
-/* ---------- Ablesehilfe: Teststreifen quer, Griff links ---------- */
+/* ---------- Ablesehilfe: Teststreifen quer, eintauchen links, Griff rechts ---------- */
 function hStrip(c,t,lbl){
   // c, t: Deckkraft der Kontroll- und Testlinie (0 = keine Linie)
-  const line=(x,o,col)=>o?`<rect x="${x}" y="9" width="7" height="22" rx="1.5" fill="${col}" opacity="${o}"/>`:'';
+  const line=(x,o)=>o?`<rect x="${x}" y="9" width="6" height="22" rx="1.5" fill="#B3264F" opacity="${o}"/>`:'';
   return `<svg class="hs" viewBox="0 0 320 40" role="img" aria-label="${esc(lbl)}">
-   <rect x="1" y="5" width="318" height="30" rx="6" fill="#fff" stroke="#3B2350" stroke-width="1.5"/>
-   <rect x="1" y="5" width="96" height="30" rx="6" fill="#DCD3EC"/><rect x="60" y="5" width="37" height="30" fill="#DCD3EC"/>
-   <rect x="112" y="9" width="104" height="22" rx="3" fill="#FBF9FE" stroke="#C9BEDD"/>
-   ${line(140,c,'#8E2A55')}${line(178,t,'#8E2A55')}
-   <rect x="232" y="5" width="3" height="30" fill="#3B2350"/>
-   <path d="M262 20h40M294 14l8 6-8 6" fill="none" stroke="#B9AECB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+   <rect x="1" y="5" width="318" height="30" rx="5" fill="#fff" stroke="#3B2350" stroke-width="1.5"/>
+   <path d="M58 20H14M22 14l-8 6 8 6" fill="none" stroke="#B9AECB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+   <rect x="74" y="5" width="6" height="30" fill="#3B2350"/>
+   ${line(150,t)}${line(186,c)}
+   <rect x="222" y="5" width="96" height="30" fill="#CFE6F5"/><rect x="300" y="5" width="18" height="30" rx="5" fill="#CFE6F5"/>
+   <path d="M232 15h70M232 25h70" stroke="#9CC7E4" stroke-width="2" stroke-dasharray="10 6"/>
   </svg>`;
 }
 function readGuide(){
@@ -667,15 +685,102 @@ function readGuide(){
             ['Negativ','negativ','Nur die Kontrolllinie',1,0],
             ['Ungültig','ungueltig','Keine Kontrolllinie: neuen Streifen nehmen',0,.8]];
   return `<div class="rg">
-   <div class="rgbig"><div class="rglab up"><span style="left:15%">Griff</span><span style="left:72.8%">Max-Linie</span></div>${hStrip(1,.55,'Teststreifen mit Beschriftung')}
-    <div class="rglab"><span style="left:44.8%">C<small>Kontrolle</small></span><span style="left:56.7%">T<small>Test</small></span><span style="left:auto;right:0;transform:none">eintauchen</span></div>
+   <div class="rgbig"><div class="rglab up"><span style="left:0;transform:none">eintauchen</span><span style="left:24%">Max-Linie</span><span style="left:84%">Griff</span></div>${hStrip(1,.55,'Teststreifen mit Beschriftung')}
+    <div class="rglab"><span style="left:47.8%">T<small>Test</small></span><span style="left:59.1%">C<small>Kontrolle</small></span></div>
    </div>
-   <p class="small muted" style="margin:6px 0 12px">Halte den Streifen wie hier: Griff links. Die Linie näher am Griff ist die Kontrolllinie, die Linie dahinter die Testlinie.</p>
+   <p class="small muted" style="margin:6px 0 12px">Halte den Streifen wie hier, mit dem Griff rechts. Die Linie direkt am Griff ist die Kontrolllinie (C), die Linie davor die Testlinie (T).</p>
    ${ex.map(([l,k,h,c,t])=>`<div class="rgex"><b class="${k}">${l}</b>${hStrip(c,t,l+': '+(h||'Testlinie dunkler als die Kontrolllinie'))}${h?`<small>${h}</small>`:''}</div>`).join('')}
    <p class="small muted" style="margin-top:8px">Nach 5 Minuten ablesen, nicht später.</p>
   </div>`;
 }
 
+/* ---------- T/C-Wert: Testlinie im Verhältnis zur Kontrolllinie ---------- */
+const fr=v=>v==null?'–':v.toFixed(2).replace('.',',');
+function tcLevel(v){return v==null?'':v>=1?'positiv':v>=.5?'steigt':'niedrig'}
+const TCL={positiv:'Positiv',steigt:'Steigt',niedrig:'Niedrig'};
+// Dunkelheit einer Linie rund um einen Tipp-Punkt. Linien quer (Spalten) oder längs (Zeilen).
+function lineAt(cv,x,y,dir){
+  const W=cv.width,H=cv.height,ctx=cv.getContext('2d',{willReadFrequently:true});
+  const along=dir==='v'?W:H,across=dir==='v'?H:W;
+  const w=Math.max(8,Math.round(along*.03)),h=Math.max(3,Math.round(across*.025));
+  const p=dir==='v'?x:y,q=dir==='v'?y:x;
+  const a0=Math.max(0,p-w),a1=Math.min(along-1,p+w),b0=Math.max(0,q-h),b1=Math.min(across-1,q+h);
+  const img=dir==='v'?ctx.getImageData(a0,b0,a1-a0+1,b1-b0+1):ctx.getImageData(b0,a0,b1-b0+1,a1-a0+1);
+  const prof=[];
+  for(let i=0;i<=a1-a0;i++){let sum=0,n=0;
+    for(let j=0;j<=b1-b0;j++){const k=dir==='v'?(j*img.width+i)*4:(i*img.width+j)*4;sum+=img.data[k+1];n++}
+    prof.push(sum/n)}
+  let mi=0;prof.forEach((v,i)=>{if(v<prof[mi])mi=i});
+  const sorted=prof.slice().sort((a,b)=>a-b),bg=sorted[Math.floor(sorted.length*.75)];
+  return {d:Math.max(0,bg-prof[mi]),pos:a0+mi};
+}
+function tcChart(c,ts){
+  const pts=ts.filter(t=>t.ratio!=null).map(t=>({x:t.n-c.start+1,y:t.ratio,r:t.result})).sort((a,b)=>a.x-b.x);
+  if(!pts.length)return '';
+  let x0=Math.max(1,pts[0].x-1),x1=pts[pts.length-1].x+1;if(x1-x0<8)x1=x0+8;
+  const ymax=Math.max(1.6,...pts.map(p=>p.y))*1.08;
+  const L=34,R=12,Tp=14,B=28,W=340,H=180,iw=W-L-R,ih=H-Tp-B;
+  const X=v=>L+(v-x0)/(x1-x0)*iw,Y=v=>Tp+ih-v/ymax*ih;
+  const peak=pts.reduce((a,b)=>b.y>a.y?b:a);
+  let path=`M${X(pts[0].x).toFixed(1)} ${Y(pts[0].y).toFixed(1)}`;
+  for(let i=1;i<pts.length;i++){const a=pts[i-1],b=pts[i],m=(X(a.x)+X(b.x))/2;path+=` C${m.toFixed(1)} ${Y(a.y).toFixed(1)} ${m.toFixed(1)} ${Y(b.y).toFixed(1)} ${X(b.x).toFixed(1)} ${Y(b.y).toFixed(1)}`}
+  const area=path+` L${X(pts[pts.length-1].x).toFixed(1)} ${Y(0)} L${X(pts[0].x).toFixed(1)} ${Y(0)}Z`;
+  const ticks=[];const step=x1-x0>16?4:2;for(let d=Math.ceil(x0/step)*step;d<=x1;d+=step)ticks.push(d);
+  return `<figure class="tcc"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="T/C-Werte: ${pts.map(p=>'Tag '+p.x+' '+fr(p.y)).join(', ')}">
+   <defs><linearGradient id="g-tc" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#C766E0" stop-opacity=".35"/><stop offset="1" stop-color="#C766E0" stop-opacity="0"/></linearGradient></defs>
+   <rect x="${L}" y="${Y(ymax)}" width="${iw}" height="${(Y(1)-Y(ymax)).toFixed(1)}" fill="#7A3FE0" opacity=".06"/>
+   ${[0,.5,1,1.5].filter(v=>v<ymax).map(v=>`<text x="${L-6}" y="${(Y(v)+4).toFixed(1)}" text-anchor="end" class="tct">${fr(v).replace(',00','')}</text>`).join('')}
+   <line x1="${L}" x2="${W-R}" y1="${Y(0)}" y2="${Y(0)}" stroke="rgba(59,35,80,.2)"/>
+   <line x1="${L}" x2="${W-R}" y1="${Y(1).toFixed(1)}" y2="${Y(1).toFixed(1)}" stroke="#7A3FE0" stroke-dasharray="4 4"/>
+   <text x="${W-R}" y="${(Y(1)-5).toFixed(1)}" text-anchor="end" class="tct" fill="#7A3FE0">positiv ab 1,0</text>
+   ${ticks.map(d=>`<text x="${X(d).toFixed(1)}" y="${H-8}" text-anchor="middle" class="tct">${d}</text>`).join('')}
+   <path d="${area}" fill="url(#g-tc)"/><path d="${path}" fill="none" stroke="#7A3FE0" stroke-width="2.5" stroke-linecap="round"/>
+   ${pts.map(p=>`<circle cx="${X(p.x).toFixed(1)}" cy="${Y(p.y).toFixed(1)}" r="${p===peak?6:4.5}" fill="${p.y>=1?'#7A3FE0':'#fff'}" stroke="#7A3FE0" stroke-width="2"/>`).join('')}
+   <text x="${X(peak.x).toFixed(1)}" y="${(Y(peak.y)-11).toFixed(1)}" text-anchor="middle" class="tct tcp">${fr(peak.y)}</text>
+  </svg><figcaption>T/C-Wert nach Zyklustag. Am höchsten Punkt ist dein LH-Anstieg am stärksten, der Eisprung folgt meist 24 bis 48 Stunden später.</figcaption></figure>`;
+}
+function tcBlock(t){
+  const has=t.preview||(t.photo&&!t.remove),v=t.ratio;
+  const step=t.mstep||0;
+  let img='';
+  if(has&&step){
+    const src=t.preview?`src="${t.preview}"`:`data-photo="${esc(t.photo)}"`;
+    img=`<p class="mhint">${step===1?'Tippe auf die <b>Kontrolllinie (C)</b>, die Linie direkt am Griff.':'Tippe jetzt auf die <b>Testlinie (T)</b>. Ist keine zu sehen, tippe auf die Stelle, wo sie wäre.'}</p>
+     <div class="mbox"><img class="mimg" ${src} alt="Foto vom Teststreifen zum Antippen">${(t.marks||[]).map((mk,i)=>`<i class="mk2" style="left:${mk.x*100}%;top:${mk.y*100}%">${i?'T':'C'}</i>`).join('')}</div>
+     <button type="button" class="link" data-a="mcancel">Messen abbrechen</button>`;
+  }
+  return `<div class="f"><span class="lab">T/C-Wert</span>
+   <div class="tcv"><b>${fr(v)}</b><span>${v==null?'Noch nicht gemessen':TCL[tcLevel(v)]+(t.measured?', vom Foto gemessen':', geschätzt')}</span></div>
+   ${img}
+   ${has&&!step?`<button type="button" class="btn line full" data-a="measure">Auf dem Foto messen</button>`:''}
+   ${!step?`<label class="sl"><span class="small muted">${has?'Oder selbst einschätzen':'Ohne Foto selbst einschätzen'}: Wie dunkel ist die Testlinie im Vergleich zur Kontrolllinie?</span>
+    <input type="range" min="0" max="2" step="0.05" data-i="tf-ratio" value="${v??0}" aria-label="T/C-Wert">
+    <span class="slx small muted"><span style="left:0;transform:none">keine</span><span style="left:25%">halb</span><span style="left:50%">gleich</span><span style="right:0;left:auto;transform:none">doppelt</span></span></label>
+    ${v!=null?`<button type="button" class="link" data-a="rmratio">Wert löschen</button>`:''}`:''}
+   ${t.merr?`<p class="err" role="alert">${esc(t.merr)}</p>`:''}
+  </div>`;
+}
+let mCanvas=null;
+async function measureTap(img,ev){
+  const t=TF,rect=img.getBoundingClientRect();
+  const fx=(ev.clientX-rect.left)/rect.width,fy=(ev.clientY-rect.top)/rect.height;
+  if(!mCanvas||mCanvas.src!==img.src){
+    const cv=document.createElement('canvas');cv.width=img.naturalWidth;cv.height=img.naturalHeight;
+    cv.getContext('2d',{willReadFrequently:true}).drawImage(img,0,0);cv.src=img.src;mCanvas=cv;
+  }
+  const cv=mCanvas,x=Math.round(fx*cv.width),y=Math.round(fy*cv.height);
+  if(t.mstep===1){
+    const v=lineAt(cv,x,y,'v'),h=lineAt(cv,x,y,'h'),dir=v.d>=h.d?'v':'h',l=dir==='v'?v:h;
+    if(l.d<12){t.merr='Hier ist keine deutliche Linie. Tippe genau auf die Kontrolllinie.';renderSheet();return}
+    t.mC={d:l.d,dir};t.marks=[dir==='v'?{x:l.pos/cv.width,y:fy}:{x:fx,y:l.pos/cv.height}];t.mstep=2;t.merr='';renderSheet();return;
+  }
+  const l=lineAt(cv,x,y,t.mC.dir);
+  const ratio=Math.min(3,Math.round(l.d/t.mC.d*100)/100);
+  t.marks.push(t.mC.dir==='v'?{x:(l.d<4?x:l.pos)/cv.width,y:fy}:{x:fx,y:(l.d<4?y:l.pos)/cv.height});
+  t.ratio=ratio;t.measured=true;t.mstep=0;t.merr='';
+  if(!t.result)t.result=ratio>=1?'positiv':'negativ';
+  renderSheet();
+}
 /* ---------- Ansichten ---------- */
 function renderApp(){
   const m=model();
@@ -730,16 +835,17 @@ function vKal(m){
 function vTests(m){
   const all=m.tests.slice().sort((a,b)=>(b.date+(b.time||'')).localeCompare(a.date+(a.time||'')));
   let body=`<button class="btn full" data-a="newtest" data-v="${todayS()}">Test eintragen</button>`;
-  if(!all.length)return page(body+`<details class="tipd rgd" style="margin-top:14px" open><summary><span aria-hidden="true">🔍</span>So liest du den Streifen ab</summary>${readGuide()}</details><p class="muted" style="margin-top:16px">Hier siehst du später alle Teststreifen untereinander. Fotografier sie immer quer mit dem Griff links und bei gutem Licht, dann kannst du sie leicht vergleichen.</p>`,'Deine Tests');
+  if(!all.length)return page(body+`<details class="tipd rgd" style="margin-top:14px" open><summary><span aria-hidden="true">🔍</span>So liest du den Streifen ab</summary>${readGuide()}</details><p class="muted" style="margin-top:16px">Hier siehst du später alle Teststreifen untereinander. Fotografier sie immer quer mit dem Griff rechts und bei gutem Licht. Dann kannst du sie leicht vergleichen und den T/C-Wert messen.</p>`,'Deine Tests');
   body+=`<details class="tipd rgd" style="margin-top:14px"><summary><span aria-hidden="true">🔍</span>So liest du den Streifen ab</summary>${readGuide()}</details>`;
   let last='x';
   for(const t of all){const c=m.cycleOf(t.n),g=c?c.start:'none';
     if(g!==last){body+=`<h3 class="cyc">${c?'Zyklus ab '+f(c.start):'Ohne Zyklus'}</h3>`;last=g;
       const ph=all.filter(x=>x.photo&&(m.cycleOf(x.n)||{start:'none'}).start===g).sort((a,b)=>(a.date+(a.time||'')).localeCompare(b.date+(b.time||'')));
-      if(ph.length>=2)body+=`<div class="cmp" aria-label="Teststreifen im Vergleich">${ph.map(x=>`<div class="cmpr"><span>${c?'Tag '+(x.n-c.start+1):esc(fs(x.n))}${x.result==='positiv'?' ✦':''}</span><img data-photo="${esc(x.photo)}" alt="Teststreifen vom ${esc(fs(x.n))}"></div>`).join('')}</div>`;
+      if(c)body+=tcChart(c,all.filter(x=>(m.cycleOf(x.n)||{}).start===c.start));
+      if(ph.length>=2)body+=`<div class="cmp" aria-label="Teststreifen im Vergleich">${ph.map(x=>`<div class="cmpr"><span>${c?'Tag '+(x.n-c.start+1):esc(fs(x.n))}${x.result==='positiv'?' ✦':''}${x.ratio!=null?`<small>${fr(x.ratio)}</small>`:''}</span><img data-photo="${esc(x.photo)}" alt="Teststreifen vom ${esc(fs(x.n))}"></div>`).join('')}</div>`;
     }
     body+=`<button class="t" data-a="edittest" data-v="${esc(t.id)}">${t.photo?`<img data-photo="${esc(t.photo)}" alt="Foto vom Teststreifen">`:''}
-      <span class="m">${strip(t.result)}<span><b class="${t.result}">${RES[t.result]}</b> ${esc(fs(t.n))}${t.time?', '+esc(t.time)+' Uhr':''}${c?`<br><span class="muted small">Zyklustag ${t.n-c.start+1}</span>`:''}${t.note?`<br><span class="muted small">${esc(t.note)}</span>`:''}</span></span></button>`}
+      <span class="m">${strip(t.result)}<span><b class="${t.result}">${RES[t.result]}</b>${t.ratio!=null?` <span class="tcb">T/C ${fr(t.ratio)}</span>`:''} ${esc(fs(t.n))}${t.time?', '+esc(t.time)+' Uhr':''}${c?`<br><span class="muted small">Zyklustag ${t.n-c.start+1}</span>`:''}${t.note?`<br><span class="muted small">${esc(t.note)}</span>`:''}</span></span></button>`}
   return page(body,'Deine Tests');
 }
 function vVerlauf(m){
@@ -800,9 +906,10 @@ function shTest(){
    <details class="tipd rgd" ${t.id?'':'open'}><summary><span aria-hidden="true">🔍</span>So liest du den Streifen ab</summary>${readGuide()}</details>
    <div class="f"><span class="lab">Ergebnis</span><div class="res">${opts.map(([v,l,h])=>`<button type="button" data-a="res" data-v="${v}" aria-pressed="${t.result===v}">${strip(v)}<span><b>${l}</b><small>${h}</small></span></button>`).join('')}</div></div>
    <div class="f"><span class="lab">Foto vom Streifen</span>
-    ${t.preview?`<img class="prev" src="${t.preview}" alt="Vorschau">`:t.photo&&!t.remove?`<img class="prev" data-photo="${esc(t.photo)}" alt="Foto vom Teststreifen">`:''}
+    ${t.mstep?'':t.preview?`<img class="prev" src="${t.preview}" alt="Vorschau">`:t.photo&&!t.remove?`<img class="prev" data-photo="${esc(t.photo)}" alt="Foto vom Teststreifen">`:''}
     <div class="row"><label class="btn line" data-a="pick">${t.preview||(t.photo&&!t.remove)?'Foto ersetzen':'Foto aufnehmen oder wählen'}<input type="file" accept="image/*" id="pf" hidden></label>${t.preview||(t.photo&&!t.remove)?`<button type="button" class="btn line" data-a="rmphoto">Entfernen</button>`:''}</div>
    </div>
+   ${tcBlock(t)}
    <label class="f"><span>Notiz</span><input type="text" data-i="tf-note" value="${esc(t.note)}"></label>
    ${t.err?`<p class="err" role="alert">${esc(t.err)}</p>`:''}
    <button class="btn full" type="submit" ${t.busy?'disabled':''}>${t.busy?'Wird gespeichert':'Test speichern'}</button>
@@ -994,10 +1101,13 @@ const A={
   sex(e){const d=dayOf(SHEET.date);d.sex=e.dataset.v==='1';prune(SHEET.date);persist();renderSheet()},
   sym(e){const d=dayOf(SHEET.date),v=e.dataset.v,a=d.symptoms||(d.symptoms=[]),i=a.indexOf(v);i<0?a.push(v):a.splice(i,1);prune(SHEET.date);persist();renderSheet()},
   newtest(e){const back=SHEET&&SHEET.t==='day'?SHEET.date:null;TF={id:null,date:e.dataset.v,time:nowTime(),result:null,photo:null,note:'',back};openSheet({t:'test'})},
-  edittest(e){const t=S.tests.find(x=>x.id===e.dataset.v);if(!t)return;const back=SHEET&&SHEET.t==='day'?SHEET.date:null;TF={id:t.id,date:t.date,time:t.time||'',result:t.result,photo:t.photo||null,note:t.note||'',back};openSheet({t:'test'})},
+  edittest(e){const t=S.tests.find(x=>x.id===e.dataset.v);if(!t)return;const back=SHEET&&SHEET.t==='day'?SHEET.date:null;TF={id:t.id,date:t.date,time:t.time||'',result:t.result,photo:t.photo||null,note:t.note||'',ratio:t.ratio??null,measured:!!t.measured,back};openSheet({t:'test'})},
   res(e){TF.result=e.dataset.v;TF.err='';renderSheet()},
+  measure(){TF.mstep=1;TF.marks=[];TF.merr='';renderSheet()},
+  mcancel(){TF.mstep=0;TF.marks=[];TF.merr='';renderSheet()},
+  rmratio(){TF.ratio=null;TF.measured=false;renderSheet()},
   pick(){pickerUntil=Date.now()+5*6e4},
-  rmphoto(){if(TF.preview)dropPreview();else TF.remove=true;renderSheet()},
+  rmphoto(){if(TF.preview)dropPreview();else TF.remove=true;if(TF.measured){TF.ratio=null;TF.measured=false}TF.mstep=0;renderSheet()},
   async deltest(){if(!TF.sure){TF.sure=true;renderSheet();return}
     const old=S.tests.find(x=>x.id===TF.id);S.tests=S.tests.filter(x=>x.id!==TF.id);if(old&&old.photo)await removePhoto(old.photo);await persist();A.close()},
   timer(){tEnd=Date.now()+5*6e4;if(!tI)tI=setInterval(drawTimer,1000);drawTimer();if(KEY&&!SHEET)renderApp()},
@@ -1035,6 +1145,8 @@ const A={
 function b64(u8){let s='';for(let i=0;i<u8.length;i+=0x8000)s+=String.fromCharCode.apply(null,u8.subarray(i,i+0x8000));return btoa(s)}
 const unb64=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
 document.addEventListener('click',e=>{
+  const mi=e.target.closest('.mimg');
+  if(mi&&TF&&TF.mstep){e.preventDefault();if(mi.complete&&mi.naturalWidth)measureTap(mi,e).catch(err=>{console.error(err);TF.merr='Das Foto ließ sich nicht auswerten. Schätze den Wert stattdessen.';TF.mstep=0;renderSheet()});return}
   const img=e.target.closest('.t img,.prev');
   if(img&&img.src&&!e.target.closest('[data-a="pick"]')){e.preventDefault();e.stopPropagation();const l=document.createElement('div');l.className='light';l.innerHTML=`<img alt="Foto vom Teststreifen" src="${img.src}">`;l.onclick=()=>l.remove();document.body.append(l);return}
   const el=e.target.closest('[data-a]');if(!el)return;
@@ -1048,6 +1160,7 @@ document.addEventListener('input',e=>{
   if(i==='temp'||i==='note'){const d=dayOf(SHEET.date);d[i]=v;prune(SHEET.date);persistSoon()}
   else if(i==='cycleLen'){S.settings.cycleLen=v?+v:null;persist()}
   else if(i==='manStart'){if(v&&num(v)<=num(todayS())){S.manStart=v;persist()}}
+  else if(i==='tf-ratio'){TF.ratio=+v;TF.measured=false;const b=$('.tcv b'),sp=$('.tcv span');if(b)b.textContent=fr(TF.ratio);if(sp)sp.textContent=TCL[tcLevel(TF.ratio)]+', geschätzt'}
   else if(i.startsWith('tf-'))TF[i.slice(3)]=v;
 });
 document.addEventListener('change',async e=>{
@@ -1066,7 +1179,7 @@ const F={
     let photo=t.remove?null:t.photo;
     if(t.blob){photo=crypto.randomUUID();await put('photo:'+photo,await enc(KEY,new Uint8Array(await t.blob.arrayBuffer())))}
     if(t.photo&&photo!==t.photo)await removePhoto(t.photo);
-    const rec={id:t.id||crypto.randomUUID(),date:t.date,time:t.time,result:t.result,photo,note:t.note};
+    const rec={id:t.id||crypto.randomUUID(),date:t.date,time:t.time,result:t.result,photo,note:t.note,ratio:t.ratio??null,measured:t.ratio!=null&&!!t.measured};
     S.tests=S.tests.filter(x=>x.id!==rec.id).concat(rec);
     await persist();
     dropPreview();A.close();
