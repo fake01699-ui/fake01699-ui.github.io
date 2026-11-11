@@ -172,6 +172,15 @@ svg.fl{display:block;width:100%;height:auto;overflow:visible}
 .tcc figcaption{font-size:13px;color:var(--soft);padding:2px 6px 0}
 .tcb{font-size:14px;color:var(--soft);font-weight:600}
 .cmpr small{display:block;font-size:12px;color:#7A3FE0;font-weight:600}
+.mks.h{color:#E0446F;font-weight:700}
+.kindl{display:block;font-size:13px;color:var(--soft);font-weight:600}
+.rev{background:var(--card);border-radius:22px;padding:12px 16px;margin-bottom:10px}
+.rev h3{font:italic 400 19px var(--serif);margin-bottom:6px}
+.rev ul{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;font-size:14px;color:var(--soft)}
+.rev b{display:block;font-size:17px;color:var(--ink)}
+.leg{list-style:none;margin:2px 0 6px;padding:0;display:flex;flex-wrap:wrap;gap:4px 14px}
+.leg li{display:flex;align-items:center;gap:6px}
+.leg i{width:14px;height:4px;border-radius:2px;display:block}
 .tipcard{display:flex;gap:14px;align-items:flex-start;width:100%;text-align:left;margin-top:18px;background:var(--card);border-radius:24px;padding:16px 18px}
 .tipe{font-size:34px;line-height:1}
 .tipcard b{display:block;font:italic 400 20px var(--serif);margin-bottom:3px}
@@ -410,7 +419,7 @@ function model(){
   const flows=Object.entries(S.days).filter(([,d])=>['leicht','mittel','stark'].includes(d.flow)).map(([k])=>num(k)).sort((a,b)=>a-b);
   const starts=[];let prev=null;
   for(const d of flows){if(prev===null||(d-prev>2&&d-starts[starts.length-1]>=14))starts.push(d);prev=d}
-  const tests=S.tests.map(t=>({...t,n:num(t.date)}));
+  const allTests=S.tests.map(t=>({...t,n:num(t.date)})),tests=allTests.filter(t=>t.type!=='hcg'),hcg=allTests.filter(t=>t.type==='hcg');
   const cycles=starts.map((s,i)=>{
     const end=i<starts.length-1?starts[i+1]-1:null,upto=end??Infinity;
     const fl=flows.filter(d=>d>=s&&d<=upto&&d-s<12);
@@ -433,7 +442,7 @@ function model(){
   const pred=new Set();
   if(nextStart!=null&&nextStart>T)for(let i=0;i<(avgBleed||5);i++)pred.add(nextStart+i);
   const cycleOf=n=>cycles.filter(c=>c.start<=n&&(c.end==null||c.end>=n)).pop()||null;
-  return {T,cycles,cur,L,avgLen,avgBleed,nextStart,planFrom,planEnd,fert,pred,tests,cycleOf,done};
+  return {T,cycles,cur,L,avgLen,avgBleed,nextStart,planFrom,planEnd,fert,pred,tests,hcg,allTests,cycleOf,done};
 }
 function bestResult(ts){for(const r of ['positiv','negativ','ungueltig'])if(ts.some(t=>t.result===r))return r;return null}
 function dayInfo(m,n){
@@ -449,12 +458,13 @@ function dayInfo(m,n){
   if(cd)lab.push('Zyklustag '+cd);
   if(d.flow)lab.push('Blutung: '+FLOW[d.flow]);
   if(d.sex)lab.push('Sex');
-  const r=bestResult(ts);
+  const r=bestResult(ts),hp=m.hcg.some(t=>t.n===n&&t.result==='positiv');
   if(r)lab.push('Test '+RES[r]);
+  if(hp)lab.push('Schwangerschaftstest positiv');
   if(m.fert.has(n))lab.push('besonders fruchtbar');
   if(m.pred.has(n))lab.push('Blutung erwartet');
   if(cl==='plan')lab.push('Testtag');
-  return {s,d,ts,cd,cl,r,label:lab.join(', ')};
+  return {s,d,ts,cd,cl,r,hp,label:lab.join(', ')};
 }
 function statusOf(m){
   const c=m.cur;if(!c)return null;
@@ -464,10 +474,12 @@ function statusOf(m){
     if(T===c.pos)return{h:'Test positiv',d:`Eisprung wahrscheinlich in 24 bis 48 Stunden, also am ${f(T+1)} oder ${f(T+2)}.`,fert:1};
     return{h:'Besonders fruchtbare Tage',d:`Dein Test war am ${f(c.pos)} positiv. Eisprung wahrscheinlich am ${f(c.pos+1)} oder ${f(c.pos+2)}.`,fert:1};
   }
+  const hpos=m.hcg.filter(t=>t.result==='positiv'&&t.n>=c.start).sort((a,b)=>b.n-a.n)[0];
+  if(hpos)return{h:'Schwangerschaftstest positiv',d:`Am ${f(hpos.n)} war dein Test positiv. Herzlichen Glückwunsch! Vereinbare einen Termin bei deiner Frauenärztin und nimm weiter täglich Folsäure.`,hcg:1};
   const pt=pregTest(m);
   if(pt&&T>=pt.from){
     const o=T-pt.from;
-    return{h:'Zeit für einen Schwangerschaftstest',d:(o?`Deine Periode ist seit ${o} ${o===1?'Tag':'Tagen'} fällig. `:'Heute wäre deine Periode fällig. ')+'Am aussagekräftigsten ist der Test mit dem ersten Morgenurin. Kommt die Blutung, trag sie einfach ein.'};
+    return{preg:1,h:'Zeit für einen Schwangerschaftstest',d:(o?`Deine Periode ist seit ${o} ${o===1?'Tag':'Tagen'} fällig. `:'Heute wäre deine Periode fällig. ')+'Am aussagekräftigsten ist der Test mit dem ersten Morgenurin. Kommt die Blutung, trag sie einfach ein.'};
   }
   if(m.nextStart!=null&&T>=m.nextStart){
     const o=T-m.nextStart;
@@ -476,6 +488,14 @@ function statusOf(m){
   if(pt){
     const dpo=T-pt.ov;
     return{h:`Tag ${dpo} nach dem Eisprung`,d:`Ein Schwangerschaftstest ist ab dem ${f(pt.from)} sinnvoll. Vorher kann er negativ sein, obwohl du schwanger bist.`,dpo};
+  }
+  if(c.pos==null&&T>=c.start+4){
+    const rec=m.tests.filter(t=>t.ratio!=null&&t.n>=T-1&&t.n<=T).sort((a,b)=>(b.date+(b.time||'')).localeCompare(a.date+(a.time||'')))[0];
+    if(rec&&rec.ratio>=.5&&rec.ratio<1){
+      const nToday=m.tests.filter(t=>t.n===T).length;
+      if(rec.n===T&&nToday===1)return{h:'Heute Abend nochmal testen',d:`Dein Wert steigt (${fr(rec.ratio)}). Ein zweiter Test am Abend, spätestens gegen 20 Uhr, hilft, den kurzen LH-Anstieg nicht zu verpassen.`};
+      if(rec.n===T-1&&nToday===0)return{h:'Heute zweimal testen',d:`Gestern lag dein Wert bei ${fr(rec.ratio)} und steigt. Teste heute einmal am späten Vormittag und einmal am Abend.`};
+    }
   }
   if(T<m.planFrom)return{h:`Test ab ${f(m.planFrom)}`,d:m.L?`Das ist Zyklustag ${ts}, passend zu ${m.L} Tagen Zykluslänge.`:'Deine Zykluslänge ist noch unbekannt, deshalb startest du an Zyklustag 5.'};
   if(T<=m.planEnd){
@@ -499,7 +519,7 @@ function strip(r){
   const t=r==='positiv'?'<rect x="3.5" y="15" width="7" height="2.6" rx="1" fill="#7A3FE0"/>':r==='negativ'?'<rect x="3.5" y="15" width="7" height="2.6" rx="1" fill="#7A3FE0" opacity=".22"/>':'';
   return `<svg class="strip" viewBox="0 0 14 26" aria-hidden="true"><rect x=".75" y=".75" width="12.5" height="24.5" rx="5" fill="#fff" stroke="#3B2350" stroke-width="1.3"/>${ctl}${t}</svg>`;
 }
-const mark=i=>i.r==='positiv'?'<span class="mks">✦</span>':i.r==='negativ'?'<span class="mks n">•</span>':i.r?'<span class="mks n">×</span>':'<span class="mks"></span>';
+const mark=i=>i.hp?'<span class="mks h">✚</span>':i.r==='positiv'?'<span class="mks">✦</span>':i.r==='negativ'?'<span class="mks n">•</span>':i.r?'<span class="mks n">×</span>':'<span class="mks"></span>';
 // Phase eines Tages: bleed, fol, fert, lut oder null (noch offen). est = geschätzt
 function dayPhase(m,c,n){
   if(!c)return {p:null};
@@ -811,7 +831,7 @@ function vHeute(m){
   const st=statusOf(m),cd=m.T-c.start+1,N=Math.max(m.L||28,cd);
   const dd=S.days[t]||{},list=[];
   if(dd.flow)list.push('Blutung: '+FLOW[dd.flow]);
-  m.tests.filter(x=>x.n===m.T).forEach(x=>list.push(`Test ${RES[x.result].toLowerCase()}`));
+  m.allTests.filter(x=>x.n===m.T).forEach(x=>list.push(`${x.type==='hcg'?'Schwangerschaftstest':'Test'} ${RES[x.result].toLowerCase()}`));
   if(dd.mucus)list.push(dd.mucus);
   if(dd.temp)list.push(String(dd.temp).replace('.',',')+' °C');
   (dd.symptoms||[]).forEach(x=>list.push(x));
@@ -819,9 +839,11 @@ function vHeute(m){
     ${phaseBar(m)}
     <ul class="keys"><li><i class="k-t"></i>Testtag</li><li><i class="k-p"></i>Test positiv</li><li><i class="k-e"></i>Kräftig: war schon, blass: erwartet</li></ul>
     <h2>${esc(st.h)}</h2><p>${esc(st.d)}</p></div>
-  <div class="acts"><button class="btn" data-a="newtest" data-v="${t}">Test eintragen</button><button class="btn line" data-a="day" data-v="${t}">Blutung eintragen</button></div>
+  ${st.preg?`<button class="btn full" style="margin-bottom:10px" data-a="newtest" data-v="${t}" data-k="hcg">Schwangerschaftstest eintragen</button>`:''}
+  <div class="acts"><button class="btn ${st.preg?'line':''}" data-a="newtest" data-v="${t}">Ovulationstest eintragen</button><button class="btn line" data-a="day" data-v="${t}">Blutung eintragen</button></div>
   ${timerBtn()}
   ${list.length?`<ul class="chips">${list.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:''}
+  ${(()=>{const prev=m.cycles.filter(x=>x.end!=null).pop();return prev&&prev.end===c.start-1&&cd<=5?`<h3 class="cyc">Rückblick auf deinen letzten Zyklus</h3>${review(m,prev)}`:''})()}
   ${folicCard()}
   ${tipCard(m)}
   ${m.nextStart!=null&&m.nextStart>m.T&&!/Blutung etwa/.test(st.h)?`<p class="soft">Deine nächste Blutung kommt etwa am ${f(m.nextStart)}.</p>`:''}`);
@@ -844,20 +866,47 @@ function vKal(m){
   </ul>`,'Dein Kalender');
 }
 function vTests(m){
-  const all=m.tests.slice().sort((a,b)=>(b.date+(b.time||'')).localeCompare(a.date+(a.time||'')));
+  const all=m.allTests.slice().sort((a,b)=>(b.date+(b.time||'')).localeCompare(a.date+(a.time||'')));
   let body=`<button class="btn full" data-a="newtest" data-v="${todayS()}">Test eintragen</button>`;
   if(!all.length)return page(body+`<details class="tipd rgd" style="margin-top:14px" open><summary><span aria-hidden="true">🔍</span>So liest du den Streifen ab</summary>${readGuide()}</details><p class="muted" style="margin-top:16px">Hier siehst du später alle Teststreifen untereinander. Fotografier sie immer quer mit dem Griff rechts und bei gutem Licht. Dann kannst du sie leicht vergleichen und den T/C-Wert messen.</p>`,'Deine Tests');
   body+=`<details class="tipd rgd" style="margin-top:14px"><summary><span aria-hidden="true">🔍</span>So liest du den Streifen ab</summary>${readGuide()}</details>`;
   let last='x';
   for(const t of all){const c=m.cycleOf(t.n),g=c?c.start:'none';
     if(g!==last){body+=`<h3 class="cyc">${c?'Zyklus ab '+f(c.start):'Ohne Zyklus'}</h3>`;last=g;
-      const ph=all.filter(x=>x.photo&&(m.cycleOf(x.n)||{start:'none'}).start===g).sort((a,b)=>(a.date+(a.time||'')).localeCompare(b.date+(b.time||'')));
-      if(c)body+=tcChart(c,all.filter(x=>(m.cycleOf(x.n)||{}).start===c.start));
+      const ph=all.filter(x=>x.type!=='hcg'&&x.photo&&(m.cycleOf(x.n)||{start:'none'}).start===g).sort((a,b)=>(a.date+(a.time||'')).localeCompare(b.date+(b.time||'')));
+      if(c)body+=tcChart(c,all.filter(x=>x.type!=='hcg'&&(m.cycleOf(x.n)||{}).start===c.start));
       if(ph.length>=2)body+=`<div class="cmp" aria-label="Teststreifen im Vergleich">${ph.map(x=>`<div class="cmpr"><span>${c?'Tag '+(x.n-c.start+1):esc(fs(x.n))}${x.result==='positiv'?' ✦':''}${x.ratio!=null?`<small>${fr(x.ratio)}</small>`:''}</span><img data-photo="${esc(x.photo)}" alt="Teststreifen vom ${esc(fs(x.n))}"></div>`).join('')}</div>`;
     }
     body+=`<button class="t" data-a="edittest" data-v="${esc(t.id)}">${t.photo?`<img data-photo="${esc(t.photo)}" alt="Foto vom Teststreifen">`:''}
-      <span class="m">${strip(t.result)}<span><b class="${t.result}">${RES[t.result]}</b>${t.ratio!=null?` <span class="tcb">T/C ${fr(t.ratio)}</span>`:''} ${esc(fs(t.n))}${t.time?', '+esc(t.time)+' Uhr':''}${c?`<br><span class="muted small">Zyklustag ${t.n-c.start+1}</span>`:''}${t.note?`<br><span class="muted small">${esc(t.note)}</span>`:''}</span></span></button>`}
+      <span class="m">${strip(t.result)}<span>${t.type==='hcg'?'<span class="kindl">Schwangerschaftstest</span>':''}<b class="${t.result}">${RES[t.result]}</b>${t.ratio!=null?` <span class="tcb">T/C ${fr(t.ratio)}</span>`:''} ${esc(fs(t.n))}${t.time?', '+esc(t.time)+' Uhr':''}${c?`<br><span class="muted small">Zyklustag ${t.n-c.start+1}</span>`:''}${t.note?`<br><span class="muted small">${esc(t.note)}</span>`:''}</span></span></button>`}
   return page(body,'Deine Tests');
+}
+function review(m,c){
+  const lh=m.tests.filter(t=>t.n>=c.start&&t.n<=c.end);
+  const win=c.pos!=null?[c.pos-3,c.pos+2]:null;
+  const sx=Object.entries(S.days).filter(([k,d])=>d.sex&&num(k)>=c.start&&num(k)<=c.end).map(([k])=>num(k));
+  const sxw=win?sx.filter(n=>n>=win[0]&&n<=win[1]).length:null;
+  const items=[`<li><b>${c.len} Tage</b> Zykluslänge</li>`,
+   c.flows.length?`<li><b>${c.flows.length} Tage</b> Blutung</li>`:'',
+   `<li><b>${c.pos!=null?'Tag '+(c.pos-c.start+1):'kein'}</b> positiver Ovulationstest</li>`,
+   lh.length?`<li><b>${lh.length}</b> Ovulationstests gemacht</li>`:'',
+   win?`<li><b>${sxw}-mal</b> Sex rund um den Eisprung</li>`:''].join('');
+  return `<div class="rev"><h3>${fs(c.start)} bis ${fs(c.end)}</h3><ul>${items}</ul></div>`;
+}
+const CURVE_COL=['#7A3FE0','#E0446F','#27805F','#5A6BC8'];
+function tcCompare(m){
+  const cs=m.cycles.map(c=>({c,pts:m.tests.filter(t=>t.ratio!=null&&t.n>=c.start&&(c.end==null||t.n<=c.end)).map(t=>({x:t.n-c.start+1,y:t.ratio})).sort((a,b)=>a.x-b.x)})).filter(o=>o.pts.length).slice(-4).reverse();
+  if(cs.length<2)return '';
+  const all=cs.flatMap(o=>o.pts),x0=Math.max(1,Math.min(...all.map(p=>p.x))-1),x1=Math.max(...all.map(p=>p.x))+1,ymax=Math.max(1.6,...all.map(p=>p.y))*1.08;
+  const L=34,R=12,Tp=12,B=26,W=340,H=170,iw=W-L-R,ih=H-Tp-B,X=v=>L+(v-x0)/Math.max(1,x1-x0)*iw,Y=v=>Tp+ih-v/ymax*ih;
+  const lines=cs.map((o,i)=>`<polyline points="${o.pts.map(p=>X(p.x).toFixed(1)+','+Y(p.y).toFixed(1)).join(' ')}" fill="none" stroke="${CURVE_COL[i]}" stroke-width="${i?2:3}" stroke-linejoin="round" opacity="${i?.75:1}"/>${o.pts.map(p=>`<circle cx="${X(p.x).toFixed(1)}" cy="${Y(p.y).toFixed(1)}" r="3" fill="${CURVE_COL[i]}"/>`).join('')}`).join('');
+  const ticks=[];const step=x1-x0>16?4:2;for(let d=Math.ceil(x0/step)*step;d<=x1;d+=step)ticks.push(d);
+  return `<h3 class="cyc">Deine LH-Kurven im Vergleich</h3><figure class="tcc"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="T/C-Kurven der letzten Zyklen">
+   ${[0,.5,1,1.5].filter(v=>v<ymax).map(v=>`<text x="${L-6}" y="${(Y(v)+4).toFixed(1)}" text-anchor="end" class="tct">${fr(v).replace(',00','')}</text>`).join('')}
+   <line x1="${L}" x2="${W-R}" y1="${Y(0)}" y2="${Y(0)}" stroke="rgba(59,35,80,.2)"/>
+   <line x1="${L}" x2="${W-R}" y1="${Y(1).toFixed(1)}" y2="${Y(1).toFixed(1)}" stroke="#7A3FE0" stroke-dasharray="4 4" opacity=".5"/>
+   ${ticks.map(d=>`<text x="${X(d).toFixed(1)}" y="${H-7}" text-anchor="middle" class="tct">${d}</text>`).join('')}${lines}
+  </svg><figcaption><ul class="leg">${cs.map((o,i)=>`<li><i style="background:${CURVE_COL[i]}"></i>${i?'Zyklus ab '+fs(o.c.start):'Aktueller Zyklus'}</li>`).join('')}</ul>Kommt dein Anstieg immer ungefähr am selben Zyklustag, kannst du deine Testtage gut planen.</figcaption></figure>`;
 }
 function vVerlauf(m){
   const cs=m.cycles.slice().reverse();
@@ -865,6 +914,9 @@ function vVerlauf(m){
   const avgPos=posDays.length?Math.round(posDays.reduce((a,b)=>a+b,0)/posDays.length):null;
   let body=m.done.length?`<p class="summary">Dein Zyklus dauert meist ${m.avgLen} Tage${m.avgBleed?`, deine Blutung etwa ${m.avgBleed}`:''}.${avgPos?` Dein Test wird meist um Tag ${avgPos} positiv.`:''}</p>`:`<p class="summary">Mit jedem Zyklus wächst hier eine neue Blüte.</p>`;
   body+='<div class="minis">'+cs.map(c=>{const l=c.len??(m.T-c.start+1);return `<div class="mini">${flower(m,c,Math.max(l,1),{mini:true})}<b>${l} ${l===1?'Tag':'Tage'}</b>${fs(c.start)}${c.end!=null?' bis '+fs(c.end):', läuft gerade'}</div>`}).join('')+'</div>';
+  body+=tcCompare(m);
+  const revs=m.cycles.filter(c=>c.end!=null).slice(-3).reverse();
+  if(revs.length)body+=`<h3 class="cyc">Rückblick</h3>`+revs.map(c=>review(m,c)).join('');
   const days=S.lastBackup?Math.floor(m.T-num(S.lastBackup)):null;
   body+=`<details id="set" ${settingsOpen?'open':''}><summary>Einstellungen und Backup</summary>
   <p class="muted small" style="margin:4px 0 8px">Deine Zykluslänge rechnet die App selbst aus, sobald ein Zyklus vollständig ist.</p>
@@ -896,11 +948,11 @@ function shDay({date}){
   const title=fW.format(new Date(n*864e5));
   if(n>m.T){const notes=[];if(m.pred.has(n))notes.push('An diesem Tag wird deine Blutung erwartet.');if(m.cur&&m.cur.pos==null&&n>=m.planFrom&&n<=m.planEnd)notes.push('Das ist ein Testtag.');
     return head(title)+`<p class="muted">${notes.join(' ')||'Dieser Tag liegt in der Zukunft.'} Eintragen kannst du ihn, wenn es so weit ist.</p>`}
-  const ts=m.tests.filter(t=>t.n===n);
+  const ts=m.allTests.filter(t=>t.n===n);
   return head(title,c?'Zyklustag '+(n-c.start+1):'')+
   `<div class="f"><span class="lab">Blutung</span>${seg([['','Keine'],...Object.entries(FLOW)],d.flow||'','flow','flow')}</div>
-  <div class="f"><span class="lab">Ovulationstest</span>
-   ${ts.map(t=>`<button class="dtest" data-a="edittest" data-v="${esc(t.id)}">${strip(t.result)}<span>${RES[t.result]}${t.time?', '+esc(t.time)+' Uhr':''}${t.photo?', mit Foto':''}</span></button>`).join('')}
+  <div class="f"><span class="lab">Tests</span>
+   ${ts.map(t=>`<button class="dtest" data-a="edittest" data-v="${esc(t.id)}">${strip(t.result)}<span>${t.type==='hcg'?'Schwangerschaftstest ':'Ovulationstest '}${RES[t.result].toLowerCase()}${t.time?', '+esc(t.time)+' Uhr':''}${t.photo?', mit Foto':''}</span></button>`).join('')}
    <button class="btn line full" style="margin-top:6px" data-a="newtest" data-v="${date}">Test hinzufügen</button></div>
   <div class="f"><span class="lab">Zervixschleim</span>${seg(MUCUS.map(x=>[x,x]),d.mucus||'','mucus')}</div>
   <div class="f"><span class="lab">Beschwerden und Stimmung</span><div class="seg">${SYM.map(x=>`<button type="button" data-a="sym" data-v="${esc(x)}" aria-pressed="${(d.symptoms||[]).includes(x)}">${esc(x)}</button>`).join('')}</div></div>
@@ -909,18 +961,23 @@ function shDay({date}){
   <label class="f"><span>Notiz</span><textarea data-i="note">${esc(d.note||'')}</textarea></label>`;
 }
 function shTest(){
-  const t=TF;
+  const t=TF,hc=t.type==='hcg';
+  if(hc)return head(t.id?'Schwangerschaftstest bearbeiten':'Schwangerschaftstest eintragen')+testForm(t,[['positiv','Positiv','Zwei Linien. Jede sichtbare Testlinie zählt, auch eine ganz schwache.'],['negativ','Negativ','Nur die Kontrolllinie']]);
   const opts=[['positiv','Positiv','Testlinie genauso dunkel oder dunkler als die Kontrolllinie'],['negativ','Negativ','Nur Kontrolllinie, oder Testlinie heller als die Kontrolllinie'],['ungueltig','Ungültig','Keine Linie, oder nur eine Testlinie']];
-  return head(t.id?'Test bearbeiten':'Test eintragen')+
-  `<form data-f="test" novalidate>
+  return head(t.id?'Test bearbeiten':'Test eintragen')+testForm(t,opts);
+}
+function testForm(t,opts){
+  const hc=t.type==='hcg';
+  return `<form data-f="test" novalidate>
+   ${t.id?'':`<div class="seg kind" style="margin-bottom:16px">${[['lh','Ovulationstest'],['hcg','Schwangerschaftstest']].map(([k,l])=>`<button type="button" data-a="tkind" data-v="${k}" aria-pressed="${(t.type||'lh')===k}">${l}</button>`).join('')}</div>`}
    <div class="row"><label class="f"><span>Tag</span><input type="date" max="${todayS()}" data-i="tf-date" value="${esc(t.date)}"></label><label class="f"><span>Uhrzeit</span><input type="time" data-i="tf-time" value="${esc(t.time)}"></label></div>
-   <details class="tipd rgd" ${t.id?'':'open'}><summary><span aria-hidden="true">🔍</span>So liest du den Streifen ab</summary>${readGuide()}</details>
+   ${hc?`<p class="small muted" style="margin-bottom:14px">Am aussagekräftigsten mit dem ersten Morgenurin. Ablesezeit laut Packungsbeilage deines Tests.</p>`:`<details class="tipd rgd" ${t.id?'':'open'}><summary><span aria-hidden="true">🔍</span>So liest du den Streifen ab</summary>${readGuide()}</details>`}
    <div class="f"><span class="lab">Ergebnis</span><div class="res">${opts.map(([v,l,h])=>`<button type="button" data-a="res" data-v="${v}" aria-pressed="${t.result===v}">${strip(v)}<span><b>${l}</b><small>${h}</small></span></button>`).join('')}</div></div>
    <div class="f"><span class="lab">Foto vom Streifen</span>
     ${t.mstep?'':t.preview?`<img class="prev" src="${t.preview}" alt="Vorschau">`:t.photo&&!t.remove?`<img class="prev" data-photo="${esc(t.photo)}" alt="Foto vom Teststreifen">`:''}
     <div class="row"><label class="btn line" data-a="pick">${t.preview||(t.photo&&!t.remove)?'Foto ersetzen':'Foto aufnehmen oder wählen'}<input type="file" accept="image/*" id="pf" hidden></label>${t.preview||(t.photo&&!t.remove)?`<button type="button" class="btn line" data-a="rmphoto">Entfernen</button>`:''}</div>
    </div>
-   ${tcBlock(t)}
+   ${hc?'':tcBlock(t)}
    <label class="f"><span>Notiz</span><input type="text" data-i="tf-note" value="${esc(t.note)}"></label>
    ${t.err?`<p class="err" role="alert">${esc(t.err)}</p>`:''}
    <button class="btn full" type="submit" ${t.busy?'disabled':''}>${t.busy?'Wird gespeichert':'Test speichern'}</button>
@@ -1095,7 +1152,7 @@ function drawTimer(){
   const left=Math.ceil((tEnd-Date.now())/1000);
   if(left>0){box.innerHTML=`<div class="timer" role="timer"><b>Noch ${Math.floor(left/60)}:${pad(left%60)} bis zum Ablesen</b><button data-a="tstop">Abbrechen</button></div>`;return}
   if(tI){clearInterval(tI);tI=null;if(navigator.vibrate)navigator.vibrate([300,150,300])}
-  box.innerHTML=`<div class="timer" role="alert"><b>Jetzt ablesen, später zählt das Ergebnis nicht mehr.</b>${KEY?'<button data-a="tres">Eintragen</button>':''}<button data-a="tstop">Schließen</button></div>`;
+  box.innerHTML=`<div class="timer" role="alert"><b>Jetzt ablesen und fotografieren.</b>${KEY&&!isMan()?'<button data-a="tres">Eintragen</button>':''}<button data-a="tstop">Schließen</button></div>`;
 }
 function stopTimer(){tEnd=null;clearInterval(tI);tI=null;drawTimer();if(KEY&&!SHEET)renderApp()}
 
@@ -1111,8 +1168,9 @@ const A={
   mucus(e){const d=dayOf(SHEET.date);d.mucus=d.mucus===e.dataset.v?'':e.dataset.v;prune(SHEET.date);persist();renderSheet()},
   sex(e){const d=dayOf(SHEET.date);d.sex=e.dataset.v==='1';prune(SHEET.date);persist();renderSheet()},
   sym(e){const d=dayOf(SHEET.date),v=e.dataset.v,a=d.symptoms||(d.symptoms=[]),i=a.indexOf(v);i<0?a.push(v):a.splice(i,1);prune(SHEET.date);persist();renderSheet()},
-  newtest(e){const back=SHEET&&SHEET.t==='day'?SHEET.date:null;TF={id:null,date:e.dataset.v,time:nowTime(),result:null,photo:null,note:'',back};openSheet({t:'test'})},
-  edittest(e){const t=S.tests.find(x=>x.id===e.dataset.v);if(!t)return;const back=SHEET&&SHEET.t==='day'?SHEET.date:null;TF={id:t.id,date:t.date,time:t.time||'',result:t.result,photo:t.photo||null,note:t.note||'',ratio:t.ratio??null,measured:!!t.measured,back};openSheet({t:'test'})},
+  newtest(e){const back=SHEET&&SHEET.t==='day'?SHEET.date:null;TF={id:null,date:e.dataset.v,time:nowTime(),result:null,photo:null,note:'',back,type:e.dataset.k==='hcg'?'hcg':'lh'};openSheet({t:'test'})},
+  tkind(e){TF.type=e.dataset.v;if(TF.type==='hcg'&&TF.result==='ungueltig')TF.result=null;TF.mstep=0;renderSheet()},
+  edittest(e){const t=S.tests.find(x=>x.id===e.dataset.v);if(!t)return;const back=SHEET&&SHEET.t==='day'?SHEET.date:null;TF={id:t.id,date:t.date,time:t.time||'',result:t.result,photo:t.photo||null,note:t.note||'',ratio:t.ratio??null,measured:!!t.measured,type:t.type||'lh',back};openSheet({t:'test'})},
   res(e){TF.result=e.dataset.v;TF.err='';renderSheet()},
   measure(){TF.mstep=1;TF.marks=[];TF.merr='';renderSheet()},
   mcancel(){TF.mstep=0;TF.marks=[];TF.merr='';renderSheet()},
@@ -1123,7 +1181,7 @@ const A={
     const old=S.tests.find(x=>x.id===TF.id);S.tests=S.tests.filter(x=>x.id!==TF.id);if(old&&old.photo)await removePhoto(old.photo);await persist();A.close()},
   timer(){tEnd=Date.now()+5*6e4;if(!tI)tI=setInterval(drawTimer,1000);drawTimer();if(KEY&&!SHEET)renderApp()},
   tstop:stopTimer,
-  tres(){const d=todayS();stopTimer();TF={id:null,date:d,time:nowTime(),result:null,photo:null,note:'',back:null};openSheet({t:'test'})},
+  tres(){const d=todayS();stopTimer();TF={id:null,date:d,time:nowTime(),result:null,photo:null,note:'',back:null,type:'lh'};openSheet({t:'test'});const pf=$('#pf');if(pf){pickerUntil=Date.now()+5*6e4;pf.click()}},
   backup(){bk=null;openSheet({t:'backup'})},
   async bkprep(e){e.disabled=true;e.textContent='Wird vorbereitet';
     await saveChain;
@@ -1190,7 +1248,9 @@ const F={
     let photo=t.remove?null:t.photo;
     if(t.blob){photo=crypto.randomUUID();await put('photo:'+photo,await enc(KEY,new Uint8Array(await t.blob.arrayBuffer())))}
     if(t.photo&&photo!==t.photo)await removePhoto(t.photo);
-    const rec={id:t.id||crypto.randomUUID(),date:t.date,time:t.time,result:t.result,photo,note:t.note,ratio:t.ratio??null,measured:t.ratio!=null&&!!t.measured};
+    const hc=t.type==='hcg';
+    const rec={id:t.id||crypto.randomUUID(),date:t.date,time:t.time,result:t.result,photo,note:t.note,ratio:hc?null:t.ratio??null,measured:!hc&&t.ratio!=null&&!!t.measured};
+    if(hc)rec.type='hcg';
     S.tests=S.tests.filter(x=>x.id!==rec.id).concat(rec);
     await persist();
     dropPreview();A.close();
