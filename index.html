@@ -151,6 +151,9 @@ svg.fl{display:block;width:100%;height:auto;overflow:visible}
 .rgex b{font-size:15px}.rgex b.positiv{color:#7A3FE0}.rgex b.ungueltig{color:#A81C49}
 .rgex small{grid-column:2;color:var(--soft);font-size:13px;line-height:1.25;margin-top:2px}
 .rgd{margin-bottom:16px}
+.rgh{font:italic 400 19px var(--serif);margin:16px 0 6px}
+.rgl{margin:0;padding-left:20px}
+.rgl li{margin-bottom:8px;font-size:15px}
 .tcv{display:flex;align-items:baseline;gap:10px;margin-bottom:10px}
 .tcv b{font:400 40px/1 var(--serif)}
 .tcv span{color:var(--soft);font-size:15px}
@@ -690,7 +693,15 @@ function readGuide(){
    </div>
    <p class="small muted" style="margin:6px 0 12px">Halte den Streifen wie hier, mit dem Griff rechts. Die Linie direkt am Griff ist die Kontrolllinie (C), die Linie davor die Testlinie (T).</p>
    ${ex.map(([l,k,h,c,t])=>`<div class="rgex"><b class="${k}">${l}</b>${hStrip(c,t,l+': '+(h||'Testlinie dunkler als die Kontrolllinie'))}${h?`<small>${h}</small>`:''}</div>`).join('')}
-   <p class="small muted" style="margin-top:8px">Nach 5 Minuten ablesen, nicht später.</p>
+   <h4 class="rgh">So vergleichst du richtig</h4>
+   <ul class="rgl">
+    <li><b>Nur die Farbstärke vergleichen,</b> nicht wie breit oder lang die Linie ist.</li>
+    <li><b>Testlinie immer mit der Kontrolllinie auf demselben Streifen vergleichen,</b> nicht mit Streifen von anderen Tagen.</li>
+    <li><b>Nach genau 5 Minuten ablesen.</b> Später können Linien nachdunkeln oder Verdunstungslinien entstehen.</li>
+    <li><b>Bei Tageslicht ablesen,</b> Streifen flach hinlegen, ohne Blitz und ohne Schatten.</li>
+    <li><b>Im Zweifel negativ:</b> Ist die Testlinie nur fast so dunkel wie die Kontrolllinie, gilt der Test als negativ. Dann am nächsten Tag weitertesten.</li>
+    <li><b>Fürs Foto</b> immer derselbe Ort, dasselbe Licht und der Griff rechts. Dann passen Fotovergleich und T/C-Messung besser.</li>
+   </ul>
   </div>`;
 }
 
