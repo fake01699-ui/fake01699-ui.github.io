@@ -140,6 +140,17 @@ svg.fl{display:block;width:100%;height:auto;overflow:visible}
   .sheet{position:static;max-height:none;overflow:visible;background:#fff;border-radius:0;padding:0;animation:none}
   .doc{padding:0}
 }
+.rg{padding-bottom:12px}
+.hs{display:block;width:100%;height:auto}
+.rgbig{position:relative;padding:22px 0 34px}
+.rglab span{position:absolute;transform:translateX(-50%);font-size:13px;font-weight:700;text-align:center;line-height:1.1;white-space:nowrap}
+.rglab span{top:calc(100% - 32px)}
+.rglab.up span{top:0}
+.rglab small{display:block;font-weight:400;color:var(--soft);font-size:11px}
+.rgex{display:grid;grid-template-columns:70px 1fr;column-gap:10px;align-items:center;padding:6px 0;border-top:1px solid var(--line)}
+.rgex b{font-size:15px}.rgex b.positiv{color:#7A3FE0}.rgex b.ungueltig{color:#A81C49}
+.rgex small{grid-column:2;color:var(--soft);font-size:13px;line-height:1.25;margin-top:2px}
+.rgd{margin-bottom:16px}
 .tipcard{display:flex;gap:14px;align-items:flex-start;width:100%;text-align:left;margin-top:18px;background:var(--card);border-radius:24px;padding:16px 18px}
 .tipe{font-size:34px;line-height:1}
 .tipcard b{display:block;font:italic 400 20px var(--serif);margin-bottom:3px}
@@ -635,6 +646,36 @@ function vManSet(){
    <button class="st" data-a="wipe" style="color:#A81C49">Alle Daten löschen</button></div>`,'Einstellungen');
 }
 
+
+/* ---------- Ablesehilfe: Teststreifen quer, Griff links ---------- */
+function hStrip(c,t,lbl){
+  // c, t: Deckkraft der Kontroll- und Testlinie (0 = keine Linie)
+  const line=(x,o,col)=>o?`<rect x="${x}" y="9" width="7" height="22" rx="1.5" fill="${col}" opacity="${o}"/>`:'';
+  return `<svg class="hs" viewBox="0 0 320 40" role="img" aria-label="${esc(lbl)}">
+   <rect x="1" y="5" width="318" height="30" rx="6" fill="#fff" stroke="#3B2350" stroke-width="1.5"/>
+   <rect x="1" y="5" width="96" height="30" rx="6" fill="#DCD3EC"/><rect x="60" y="5" width="37" height="30" fill="#DCD3EC"/>
+   <rect x="112" y="9" width="104" height="22" rx="3" fill="#FBF9FE" stroke="#C9BEDD"/>
+   ${line(140,c,'#8E2A55')}${line(178,t,'#8E2A55')}
+   <rect x="232" y="5" width="3" height="30" fill="#3B2350"/>
+   <path d="M262 20h40M294 14l8 6-8 6" fill="none" stroke="#B9AECB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>`;
+}
+function readGuide(){
+  const ex=[['Positiv','positiv','Testlinie gleich dunkel oder dunkler als die Kontrolllinie',1,1],
+            ['Positiv','positiv','',.85,1],
+            ['Negativ','negativ','Testlinie heller als die Kontrolllinie',1,.35],
+            ['Negativ','negativ','Nur die Kontrolllinie',1,0],
+            ['Ungültig','ungueltig','Keine Kontrolllinie: neuen Streifen nehmen',0,.8]];
+  return `<div class="rg">
+   <div class="rgbig"><div class="rglab up"><span style="left:15%">Griff</span><span style="left:72.8%">Max-Linie</span></div>${hStrip(1,.55,'Teststreifen mit Beschriftung')}
+    <div class="rglab"><span style="left:44.8%">C<small>Kontrolle</small></span><span style="left:56.7%">T<small>Test</small></span><span style="left:auto;right:0;transform:none">eintauchen</span></div>
+   </div>
+   <p class="small muted" style="margin:6px 0 12px">Halte den Streifen wie hier: Griff links. Die Linie näher am Griff ist die Kontrolllinie, die Linie dahinter die Testlinie.</p>
+   ${ex.map(([l,k,h,c,t])=>`<div class="rgex"><b class="${k}">${l}</b>${hStrip(c,t,l+': '+(h||'Testlinie dunkler als die Kontrolllinie'))}${h?`<small>${h}</small>`:''}</div>`).join('')}
+   <p class="small muted" style="margin-top:8px">Nach 5 Minuten ablesen, nicht später.</p>
+  </div>`;
+}
+
 /* ---------- Ansichten ---------- */
 function renderApp(){
   const m=model();
@@ -689,8 +730,8 @@ function vKal(m){
 function vTests(m){
   const all=m.tests.slice().sort((a,b)=>(b.date+(b.time||'')).localeCompare(a.date+(a.time||'')));
   let body=`<button class="btn full" data-a="newtest" data-v="${todayS()}">Test eintragen</button>`;
-  if(!all.length)return page(body+`<p class="muted" style="margin-top:16px">Hier siehst du später alle Teststreifen untereinander. Fotografier sie immer quer und bei gutem Licht, dann kannst du sie leicht vergleichen.</p>`,'Deine Tests');
-  body+=`<p class="muted small" style="margin-top:12px">Entscheidend ist immer der Vergleich mit der Kontrolllinie auf demselben Streifen.</p>`;
+  if(!all.length)return page(body+`<details class="tipd rgd" style="margin-top:14px" open><summary><span aria-hidden="true">🔍</span>So liest du den Streifen ab</summary>${readGuide()}</details><p class="muted" style="margin-top:16px">Hier siehst du später alle Teststreifen untereinander. Fotografier sie immer quer mit dem Griff links und bei gutem Licht, dann kannst du sie leicht vergleichen.</p>`,'Deine Tests');
+  body+=`<details class="tipd rgd" style="margin-top:14px"><summary><span aria-hidden="true">🔍</span>So liest du den Streifen ab</summary>${readGuide()}</details>`;
   let last='x';
   for(const t of all){const c=m.cycleOf(t.n),g=c?c.start:'none';
     if(g!==last){body+=`<h3 class="cyc">${c?'Zyklus ab '+f(c.start):'Ohne Zyklus'}</h3>`;last=g;
@@ -756,6 +797,7 @@ function shTest(){
   return head(t.id?'Test bearbeiten':'Test eintragen')+
   `<form data-f="test" novalidate>
    <div class="row"><label class="f"><span>Tag</span><input type="date" max="${todayS()}" data-i="tf-date" value="${esc(t.date)}"></label><label class="f"><span>Uhrzeit</span><input type="time" data-i="tf-time" value="${esc(t.time)}"></label></div>
+   <details class="tipd rgd" ${t.id?'':'open'}><summary><span aria-hidden="true">🔍</span>So liest du den Streifen ab</summary>${readGuide()}</details>
    <div class="f"><span class="lab">Ergebnis</span><div class="res">${opts.map(([v,l,h])=>`<button type="button" data-a="res" data-v="${v}" aria-pressed="${t.result===v}">${strip(v)}<span><b>${l}</b><small>${h}</small></span></button>`).join('')}</div></div>
    <div class="f"><span class="lab">Foto vom Streifen</span>
     ${t.preview?`<img class="prev" src="${t.preview}" alt="Vorschau">`:t.photo&&!t.remove?`<img class="prev" data-photo="${esc(t.photo)}" alt="Foto vom Teststreifen">`:''}
