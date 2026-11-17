@@ -143,6 +143,12 @@ svg.fl{display:block;width:100%;height:auto;overflow:visible}
 .cmpr img.cut,.t .ph.cut{object-fit:cover;background:#fff;box-shadow:inset 0 0 0 1px var(--line)}
 .cmpr small{display:block;font-size:12px;font-weight:600;color:var(--soft)}
 .cmpr.pos small{color:#7A3FE0}
+.cmpr .cl{display:block;text-align:left;line-height:1.25;font-size:14px;color:var(--soft);padding:4px 0;min-height:44px}
+.cmpr button.cl{color:var(--ink);font-weight:600}
+.cmpr .cl em{display:block;font-style:normal;font-size:11.5px;font-weight:400;color:var(--soft);margin-top:1px}
+.nophoto{display:grid;place-items:center;width:100%;aspect-ratio:22/7;border-radius:10px;background:#F3ECF7;color:var(--soft);font-size:13px}
+.ovl .cl em{display:inline;margin-left:4px}
+.ovl .cmpr .cl{min-height:0;padding:0}
 .cmpr.ref{padding-bottom:10px;border-bottom:1.5px dashed var(--line)}
 .cmpr.ref>span{color:#7A3FE0}
 .cmpa{display:flex;gap:8px;margin-top:4px}
@@ -155,11 +161,11 @@ svg.fl{display:block;width:100%;height:auto;overflow:visible}
 .ovl .cmpa,.ovl .cmpn{display:none}
 .ovl .cmpr,.ovl .cmph{grid-template-columns:1fr;gap:4px}
 .ovl .cmph b{display:none}
-.ovl .cmpr>span{display:flex;gap:8px;align-items:baseline;font-size:15px}
+.ovl .cmpr>.cl{display:flex;gap:8px;align-items:baseline;font-size:15px}
 .ovl .cmpr small{display:inline;font-size:13px}
 .ovl .cmpr img{border-radius:12px}
 .ovl .ovt{font-size:13px;color:var(--soft);text-align:center;margin-top:10px}
-@media (orientation:landscape){.ovl .cmpr,.ovl .cmph{grid-template-columns:110px 1fr;gap:12px}.ovl .cmph b{display:block}.ovl .cmpr>span{display:block}.ovl .cmpr small{display:block}.ovl .ovt{display:none}.ovl .cmp{max-width:1100px;margin:0 auto}}
+@media (orientation:landscape){.ovl .cmpr,.ovl .cmph{grid-template-columns:110px 1fr;gap:12px}.ovl .cmph b{display:block}.ovl .cmpr>.cl{display:block}.ovl .cmpr small{display:block}.ovl .ovt{display:none}.ovl .cmp{max-width:1100px;margin:0 auto}}
 .cmpn{font-size:12.5px;color:var(--soft);margin:2px 2px 0;line-height:1.4}
 .doc{background:#fff;border-radius:20px;padding:16px}
 .doc dl{display:grid;grid-template-columns:1fr auto;gap:8px 12px;margin:0 0 16px}
@@ -958,19 +964,24 @@ function vTests(m){
   let body=`${timerBtn()}<button class="btn full" data-a="newtest" data-v="${todayS()}">Test eintragen</button>`;
   if(!all.length)return page(body+`<details class="tipd rgd" style="margin-top:14px" open><summary><span aria-hidden="true">🔍</span>So liest du den Streifen ab</summary>${readGuide()}</details><p class="muted" style="margin-top:16px">Hier siehst du später alle Teststreifen untereinander. Fotografier sie immer quer mit dem Griff rechts und bei gutem Licht. Dann kannst du sie leicht vergleichen und den T/C-Wert messen.</p>`,'Deine Tests');
   body+=`<details class="tipd rgd" style="margin-top:14px"><summary><span aria-hidden="true">🔍</span>So liest du den Streifen ab</summary>${readGuide()}</details>`;
-  let last='x';
-  for(const t of all){const c=m.cycleOf(t.n),g=c?c.start:'none';
-    if(g!==last){body+=`<h3 class="cyc">${c?'Zyklus ab '+f(c.start):'Ohne Zyklus'}</h3>`;last=g;
-      const ph=all.filter(x=>x.type!=='hcg'&&x.photo&&(m.cycleOf(x.n)||{start:'none'}).start===g).sort((a,b)=>(a.date+(a.time||'')).localeCompare(b.date+(b.time||'')));
-      const ci=c?m.cycles.indexOf(c):-1,pc=ci>0?m.cycles[ci-1]:null;
-      const ref=pc?m.tests.filter(x=>x.result==='positiv'&&x.photo&&hasMarks(x)&&x.n>=pc.start&&x.n<=pc.end).sort((a,b)=>a.n-b.n)[0]:null;
-      if(ph.length>=2||(ref&&ph.length)){const cut=ref||ph.some(x=>hasMarks(x)),uncut=ph.some(x=>!hasMarks(x));
-        body+=`<div class="cmp" data-title="${esc(c?'Zyklus ab '+f(c.start):'Tests')}" aria-label="Teststreifen im Vergleich">${cut?`<div class="cmph" aria-hidden="true"><b></b><span><i style="left:${CUT.t}%">T</i><i style="left:${CUT.c}%">C</i></span></div>`:''}${ref?`<div class="cmpr ref"><span>Letzter Zyklus ✦<small>Tag ${ref.n-pc.start+1}, positiv</small></span>${photoImg(ref,'Positiver Streifen aus dem letzten Zyklus')}</div>`:''}${ph.map(x=>`<div class="cmpr${x.result==='positiv'?' pos':''}"><span>${c?'Tag '+(x.n-c.start+1):esc(fs(x.n))}${x.result==='positiv'?' ✦':''}<small>${esc(RES[x.result])}</small></span>${photoImg(x,'Teststreifen vom '+fs(x.n))}</div>`).join('')}${uncut?`<p class="cmpn">Noch nicht ausgerichtet? Tippe beim Test auf „Bearbeiten“ und dann auf „Streifen ausrichten“. Dann steht er hier genau unter den anderen.</p>`:''}<div class="cmpa"><button data-a="cmpbig">Groß ansehen</button><button data-a="cmpshare">Als Bild teilen</button></div></div>`}
-    }
-    const sure=qdel===t.id;
-    body+=`<div class="t">${t.photo?photoImg(t,'Foto vom Teststreifen, antippen zum Vergrößern'):''}
-      <button class="tin" data-a="edittest" data-v="${esc(t.id)}"><span class="m">${strip(t.result)}<span>${t.type==='hcg'?'<span class="kindl">Schwangerschaftstest</span>':''}<b class="${t.result}">${RES[t.result]}</b><br>${esc(fs(t.n))}${t.time?', '+esc(t.time)+' Uhr':''}${c?`<br><span class="muted small">Zyklustag ${t.n-c.start+1}</span>`:''}${t.note?`<br><span class="muted small">${esc(t.note)}</span>`:''}</span></span></button>
-      <div class="ta"><button data-a="edittest" data-v="${esc(t.id)}">Bearbeiten</button><button class="del${sure?' sure':''}" data-a="qdel" data-v="${esc(t.id)}">${sure?'Wirklich löschen?':'Löschen'}</button></div></div>`}
+  // Pro Zyklus eine Liste: alle Streifen untereinander, ausgerichtet
+  const groups=[];
+  for(const t of all){const c=m.cycleOf(t.n),g=c?c.start:'none';let gr=groups.find(x=>x.g===g);if(!gr)groups.push(gr={g,c,ts:[]});gr.ts.push(t)}
+  for(const {c,ts} of groups){
+    const list=ts.slice().sort((a,b)=>(a.date+(a.time||'')).localeCompare(b.date+(b.time||'')));
+    const ci=c?m.cycles.indexOf(c):-1,pc=ci>0?m.cycles[ci-1]:null;
+    const ref=pc?m.tests.filter(x=>x.result==='positiv'&&x.photo&&hasMarks(x)&&x.n>=pc.start&&x.n<=pc.end).sort((a,b)=>a.n-b.n)[0]:null;
+    const uncut=list.some(x=>x.photo&&x.type!=='hcg'&&!hasMarks(x));
+    body+=`<h3 class="cyc">${c?'Zyklus ab '+f(c.start):'Ohne Zyklus'}</h3>
+    <div class="cmp" data-title="${esc(c?'Zyklus ab '+f(c.start):'Tests')}" aria-label="Teststreifen untereinander">
+     <div class="cmph" aria-hidden="true"><b></b><span><i style="left:${CUT.t}%">T</i><i style="left:${CUT.c}%">C</i></span></div>
+     ${ref?`<div class="cmpr ref"><span class="cl">Letzter Zyklus ✦<small>Tag ${ref.n-pc.start+1}, positiv</small></span>${photoImg(ref,'Positiver Streifen aus dem letzten Zyklus')}</div>`:''}
+     ${list.map(x=>`<div class="cmpr${x.result==='positiv'?' pos':''}"><button class="cl" data-a="edittest" data-v="${esc(x.id)}" aria-label="Test vom ${esc(fs(x.n))} bearbeiten oder löschen">${c?'Tag '+(x.n-c.start+1):esc(fs(x.n))}${x.result==='positiv'?' ✦':''}<small>${x.type==='hcg'?'SS-Test ':''}${esc(RES[x.result])}</small><em>${x.time?esc(x.time)+' Uhr':esc(fs(x.n))}</em></button>${x.photo?photoImg(x,'Teststreifen vom '+fs(x.n)):`<button class="nophoto" data-a="edittest" data-v="${esc(x.id)}">Kein Foto</button>`}</div>`).join('')}
+     ${uncut?`<p class="cmpn">Ein Streifen ist noch nicht ausgerichtet? Tippe links auf den Tag und dann auf „Streifen ausrichten“.</p>`:''}
+     <p class="cmpn">Zum Bearbeiten oder Löschen tippe links auf den Tag.</p>
+     <div class="cmpa"><button data-a="cmpbig">Groß ansehen</button><button data-a="cmpshare">Als Bild teilen</button></div>
+    </div>`;
+  }
   return page(body,'Deine Tests');
 }
 function review(m,c){
@@ -1245,7 +1256,7 @@ async function cmpImage(src){
   g.font='700 24px system-ui,sans-serif';g.fillStyle='#7B6890';
   if(src.querySelector('.cmph')){g.textAlign='center';g.fillText('T',pad+lab+sw*CUT.t/100,top-16);g.fillText('C',pad+lab+sw*CUT.c/100,top-16);g.textAlign='left'}
   for(let i=0;i<rows.length;i++){const r=rows[i],y=top+i*(sh+gap),img=r.querySelector('img');
-    const sp=r.querySelector(':scope>span'),sm=sp.querySelector('small'),t1=sp.firstChild?sp.firstChild.textContent.trim():'',t2=sm?sm.textContent:'';
+    const sp=r.querySelector(':scope>.cl'),sm=sp.querySelector('small'),t1=sp.firstChild?sp.firstChild.textContent.trim():'',t2=sm?sm.textContent:'';
     g.fillStyle=r.classList.contains('ref')||r.classList.contains('pos')?'#7A3FE0':'#3B2350';g.font='600 30px system-ui,sans-serif';g.fillText(t1,pad,y+sh/2-4);
     g.font='26px system-ui,sans-serif';g.fillStyle=r.classList.contains('pos')?'#7A3FE0':'#7B6890';g.fillText(t2,pad,y+sh/2+32);
     g.save();g.beginPath();g.roundRect(pad+lab,y,sw,sh,18);g.clip();g.fillStyle=img&&img.classList.contains('cut')?'#fff':'#EFE7F3';g.fillRect(pad+lab,y,sw,sh);
