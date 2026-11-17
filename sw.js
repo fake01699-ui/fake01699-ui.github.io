@@ -1,5 +1,5 @@
 // Macht die Seite auch ohne Internet verfügbar. Hier läuft nur der Programmcode durch, keine Einträge.
-const CACHE = 'zyklus-v7';
+const CACHE = 'zyklus-v8';
 const FILES = ['./', './index.html', './manifest.webmanifest', './icon-180.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
