@@ -86,8 +86,17 @@ svg.fl{display:block;width:100%;height:auto;overflow:visible}
 .hero p{margin:8px auto 0;max-width:330px;color:var(--soft);font-size:16px}
 .acts{display:flex;gap:10px;margin-bottom:10px}
 .acts .btn{flex:1;padding:0 8px;font-size:16px}
-.timerb{display:flex;align-items:center;justify-content:center;width:100%;min-height:46px;color:var(--soft);font-size:16px;text-decoration:underline;text-underline-offset:3px}
-.timerb[disabled]{opacity:.5;text-decoration:none}
+.tfab{position:fixed;right:max(18px,calc(50% - 222px));bottom:calc(var(--bot) + 92px);z-index:6;display:flex;align-items:center;gap:8px;height:52px;padding:0 18px 0 12px;border-radius:26px;background:linear-gradient(120deg,#7A3FE0,#C766E0);color:#fff;font-weight:700;font-size:15px;box-shadow:0 8px 22px rgba(122,63,224,.4)}
+.tfab svg{width:26px;height:26px}
+.timerb{display:flex;align-items:center;gap:14px;width:100%;text-align:left;margin:4px 0 14px;padding:12px 16px;border-radius:22px;background:var(--card);box-shadow:inset 0 0 0 2px #C9A8F0}
+.timerb .tico{flex:none;width:46px;height:46px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(120deg,#7A3FE0,#C766E0);color:#fff}
+.timerb .tico svg{width:26px;height:26px}
+.timerb b{display:block;font-size:17px;color:var(--ink)}
+.timerb small{display:block;font-size:13.5px;color:var(--soft);margin-top:2px}
+.timerb .go{margin-left:auto;flex:none;font-weight:700;color:#7A3FE0;font-size:15px}
+.timerb[disabled]{box-shadow:inset 0 0 0 2px var(--line)}
+.timerb[disabled] .tico{background:#B9A8CC}
+.timerb[disabled] .go{color:var(--soft)}
 .keys{list-style:none;margin:12px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:6px 14px;justify-content:center;font-size:14px;color:var(--soft)}
 .keys li{display:flex;align-items:center;gap:6px}
 .keys i{width:12px;height:12px;border-radius:50%;display:block}
@@ -134,6 +143,23 @@ svg.fl{display:block;width:100%;height:auto;overflow:visible}
 .cmpr img.cut,.t .ph.cut{object-fit:cover;background:#fff;box-shadow:inset 0 0 0 1px var(--line)}
 .cmpr small{display:block;font-size:12px;font-weight:600;color:var(--soft)}
 .cmpr.pos small{color:#7A3FE0}
+.cmpr.ref{padding-bottom:10px;border-bottom:1.5px dashed var(--line)}
+.cmpr.ref>span{color:#7A3FE0}
+.cmpa{display:flex;gap:8px;margin-top:4px}
+.cmpa button{flex:1;min-height:42px;border-radius:14px;font-size:14px;font-weight:600;color:var(--ink);background:#F3ECF7}
+.ovl{position:fixed;inset:0;z-index:15;background:var(--bg2);overflow:auto;padding:calc(env(safe-area-inset-top) + 12px) 12px calc(env(safe-area-inset-bottom) + 24px)}
+.ovl .ovh{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.ovl .ovh h3{font:italic 400 22px var(--serif)}
+.ovl .ovh button{min-height:44px;padding:0 16px;border-radius:22px;background:var(--card);font-weight:600}
+.ovl .cmp{gap:14px;padding:14px}
+.ovl .cmpa,.ovl .cmpn{display:none}
+.ovl .cmpr,.ovl .cmph{grid-template-columns:1fr;gap:4px}
+.ovl .cmph b{display:none}
+.ovl .cmpr>span{display:flex;gap:8px;align-items:baseline;font-size:15px}
+.ovl .cmpr small{display:inline;font-size:13px}
+.ovl .cmpr img{border-radius:12px}
+.ovl .ovt{font-size:13px;color:var(--soft);text-align:center;margin-top:10px}
+@media (orientation:landscape){.ovl .cmpr,.ovl .cmph{grid-template-columns:110px 1fr;gap:12px}.ovl .cmph b{display:block}.ovl .cmpr>span{display:block}.ovl .cmpr small{display:block}.ovl .ovt{display:none}.ovl .cmp{max-width:1100px;margin:0 auto}}
 .cmpn{font-size:12.5px;color:var(--soft);margin:2px 2px 0;line-height:1.4}
 .doc{background:#fff;border-radius:20px;padding:16px}
 .doc dl{display:grid;grid-template-columns:1fr auto;gap:8px 12px;margin:0 0 16px}
@@ -788,15 +814,50 @@ const CUT={a:1.7,h:1.4};CUT.w=CUT.a*2+1;CUT.t=+(CUT.a/CUT.w*100).toFixed(1);CUT.
 const hasMarks=t=>Array.isArray(t.marks)&&t.marks.length===2;
 function photoImg(t,alt){const mk=hasMarks(t)?` data-marks="${esc(JSON.stringify({m:t.marks,d:t.mdir||''}))}"`:'';return `<img class="ph" data-photo="${esc(t.photo)}"${mk} alt="${esc(alt)}">`}
 const cutCache=new Map();
+/* Neigung des Streifens aus dem Verlauf der C- und T-Linie schätzen. Gibt die Streifenrichtung (T nach C) zurück. */
+function stripTilt(im,C,T,dir,L){
+  const cv=document.createElement('canvas');cv.width=im.naturalWidth;cv.height=im.naturalHeight;
+  const g=cv.getContext('2d',{willReadFrequently:true});g.drawImage(im,0,0);
+  const V=dir==='v',win=Math.max(3,Math.round(L*.22)),band=Math.max(1,Math.round(L*.03));
+  // Liniensuche in einem schmalen Band quer zur Linie, nur nahe der bekannten Position
+  function pos(P,off){
+    const ax=V?Math.round(P.x):Math.round(P.y),q=V?Math.round(P.y+off):Math.round(P.x+off);
+    const a0=Math.max(0,ax-win),a1=Math.min((V?cv.width:cv.height)-1,ax+win),b0=Math.max(0,q-band),b1=Math.min((V?cv.height:cv.width)-1,q+band);
+    if(a1-a0<4||b1<b0)return null;
+    const d=V?g.getImageData(a0,b0,a1-a0+1,b1-b0+1):g.getImageData(b0,a0,b1-b0+1,a1-a0+1),pr=[];
+    for(let i=0;i<=a1-a0;i++){let sm=0,n=0;for(let j=0;j<=b1-b0;j++){const k=V?(j*d.width+i)*4:(i*d.width+j)*4;sm+=d.data[k+1];n++}pr.push(sm/n)}
+    let mi=0;pr.forEach((v,i)=>{if(v<pr[mi])mi=i});
+    const st=pr.slice().sort((a,b)=>a-b),bg=st[Math.floor(st.length*.8)];
+    if(bg-pr[mi]<10)return null;
+    // Mitte der Linie: Bereich unter halber Tiefe um das Minimum, gewichtet
+    const th=pr[mi]+(bg-pr[mi])/2;let l=mi,r=mi;while(l>0&&pr[l-1]<th)l--;while(r<pr.length-1&&pr[r+1]<th)r++;
+    let sw=0,sx=0;for(let i=l;i<=r;i++){const w=th-pr[i]+1;sw+=w;sx+=w*i}
+    return a0+sx/sw;
+  }
+  const s=Math.max(3,Math.round(L*.3)),vs=[];
+  for(const P of [C,T]){
+    const p1=pos(P,-s),p2=pos(P,s),p0=pos(P,0);
+    if(p1==null||p2==null||p0==null)continue;
+    if(Math.abs((p1+p2)/2-p0)>Math.max(2,L*.06))continue; // nicht gerade: verwerfen
+    const lv=V?{x:p2-p1,y:2*s}:{x:2*s,y:p2-p1};
+    const n=Math.hypot(lv.x,lv.y);let ax={x:lv.y/n,y:-lv.x/n};
+    if(ax.x*(C.x-T.x)+ax.y*(C.y-T.y)<0)ax={x:-ax.x,y:-ax.y};vs.push(ax)}
+  if(!vs.length)return null;
+  if(vs.length===2&&vs[0].x*vs[1].x+vs[0].y*vs[1].y<.985)return null;
+  return {x:vs.reduce((a,v)=>a+v.x,0),y:vs.reduce((a,v)=>a+v.y,0)};
+}
 async function cutStrip(url,spec){
   const key=url+spec;if(cutCache.has(key))return cutCache.get(key);
   const {m,d}=JSON.parse(spec);
   const im=new Image();im.src=url;await im.decode();
   const W=im.naturalWidth,H=im.naturalHeight,C={x:m[0].x*W,y:m[0].y*H},T={x:m[1].x*W,y:m[1].y*H};
   const dir=d||(Math.abs(C.x-T.x)>=Math.abs(C.y-T.y)?'v':'h');
-  const L=dir==='v'?Math.abs(C.x-T.x):Math.abs(C.y-T.y);
+  let L=dir==='v'?Math.abs(C.x-T.x):Math.abs(C.y-T.y);
   if(L<4)return null;
-  const ang=dir==='v'?(C.x>=T.x?0:Math.PI):(C.y>=T.y?Math.PI/2:-Math.PI/2);
+  let ang=dir==='v'?(C.x>=T.x?0:Math.PI):(C.y>=T.y?Math.PI/2:-Math.PI/2);
+  try{const tl=stripTilt(im,C,T,dir,L);if(tl!=null){
+    let a=Math.atan2(tl.y,tl.x),dd=a-ang;while(dd>Math.PI)dd-=2*Math.PI;while(dd<-Math.PI)dd+=2*Math.PI;
+    if(Math.abs(dd)<.45){ang=a;L=Math.abs((C.x-T.x)*Math.cos(a)+(C.y-T.y)*Math.sin(a))||L}}}catch(e){console.error(e)}
   const mid={x:(C.x+T.x)/2,y:(C.y+T.y)/2};
   const cw=880,ch=Math.round(cw*CUT.h/CUT.w),sc=cw/(CUT.w*L);
   const cv=document.createElement('canvas');cv.width=cw;cv.height=ch;const g=cv.getContext('2d');
@@ -846,7 +907,7 @@ function renderApp(){
   if(isMan()){if(!['heute','mtipps','mset'].includes(tab))tab='heute';setPhase('man');v={heute:vManHeute,mtipps:vManTipps,mset:vManSet}[tab]()}
   else{if(!['heute','kal','tests','verlauf'].includes(tab))tab='heute';setPhase(phaseOf(m));v={heute:vHeute,kal:vKal,tests:vTests,verlauf:vVerlauf}[tab](m)}
   const scroll=window.scrollY;
-  $('#app').innerHTML=v;
+  $('#app').innerHTML=v+timerFab();
   hydrate($('#app'));
   if(tab==='heute')bloomNext=false;
   window.scrollTo(0,scroll);
@@ -868,14 +929,14 @@ function vHeute(m){
     <h2>${esc(st.h)}</h2><p>${esc(st.d)}</p></div>
   ${st.preg?`<button class="btn full" style="margin-bottom:10px" data-a="newtest" data-v="${t}" data-k="hcg">Schwangerschaftstest eintragen</button>`:''}
   <div class="acts"><button class="btn ${st.preg?'line':''}" data-a="newtest" data-v="${t}">Ovulationstest eintragen</button><button class="btn line" data-a="day" data-v="${t}">Blutung eintragen</button></div>
-  ${timerBtn()}
   ${list.length?`<ul class="chips">${list.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:''}
   ${(()=>{const prev=m.cycles.filter(x=>x.end!=null).pop();return prev&&prev.end===c.start-1&&cd<=5?`<h3 class="cyc">Rückblick auf deinen letzten Zyklus</h3>${review(m,prev)}`:''})()}
   ${folicCard()}
   ${tipCard(m)}
   ${m.nextStart!=null&&m.nextStart>m.T&&!/Blutung etwa/.test(st.h)?`<p class="soft">Deine nächste Blutung kommt etwa am ${f(m.nextStart)}.</p>`:''}`);
 }
-const timerBtn=()=>`<button class="timerb" data-a="timer" ${tEnd?'disabled':''}>5-Minuten-Timer zum Ablesen starten</button>`;
+const timerFab=()=>tEnd||isMan()||!['heute','tests'].includes(tab)?'':`<button class="tfab" data-a="timer" aria-label="5-Minuten-Ablese-Timer starten"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="13.5" r="7.5"/><path d="M12 9.5v4l2.5 2M9.5 2.5h5M19 6l-1.5 1.5"/></svg>Timer</button>`;
+const timerBtn=()=>`<button class="timerb" data-a="timer" ${tEnd?'disabled':''}><span class="tico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="13.5" r="7.5"/><path d="M12 9.5v4l2.5 2M9.5 2.5h5M19 6l-1.5 1.5"/></svg></span><span><b>Ablese-Timer</b><small>${tEnd?'Läuft gerade, oben siehst du die Zeit':'Streifen eingetaucht? 5 Minuten bis zum Ablesen'}</small></span><span class="go">${tEnd?'läuft':'Start'}</span></button>`;
 function vKal(m){
   if(vy==null){const d=new Date();vy=d.getFullYear();vm=d.getMonth()}
   const first=Date.UTC(vy,vm,1)/864e5,dim=new Date(Date.UTC(vy,vm+1,0)).getUTCDate();
@@ -894,15 +955,17 @@ function vKal(m){
 }
 function vTests(m){
   const all=m.allTests.slice().sort((a,b)=>(b.date+(b.time||'')).localeCompare(a.date+(a.time||'')));
-  let body=`<button class="btn full" data-a="newtest" data-v="${todayS()}">Test eintragen</button>`;
+  let body=`${timerBtn()}<button class="btn full" data-a="newtest" data-v="${todayS()}">Test eintragen</button>`;
   if(!all.length)return page(body+`<details class="tipd rgd" style="margin-top:14px" open><summary><span aria-hidden="true">🔍</span>So liest du den Streifen ab</summary>${readGuide()}</details><p class="muted" style="margin-top:16px">Hier siehst du später alle Teststreifen untereinander. Fotografier sie immer quer mit dem Griff rechts und bei gutem Licht. Dann kannst du sie leicht vergleichen und den T/C-Wert messen.</p>`,'Deine Tests');
   body+=`<details class="tipd rgd" style="margin-top:14px"><summary><span aria-hidden="true">🔍</span>So liest du den Streifen ab</summary>${readGuide()}</details>`;
   let last='x';
   for(const t of all){const c=m.cycleOf(t.n),g=c?c.start:'none';
     if(g!==last){body+=`<h3 class="cyc">${c?'Zyklus ab '+f(c.start):'Ohne Zyklus'}</h3>`;last=g;
       const ph=all.filter(x=>x.type!=='hcg'&&x.photo&&(m.cycleOf(x.n)||{start:'none'}).start===g).sort((a,b)=>(a.date+(a.time||'')).localeCompare(b.date+(b.time||'')));
-      if(ph.length>=2){const cut=ph.some(x=>hasMarks(x)),uncut=ph.some(x=>!hasMarks(x));
-        body+=`<div class="cmp" aria-label="Teststreifen im Vergleich">${cut?`<div class="cmph" aria-hidden="true"><b></b><span><i style="left:${CUT.t}%">T</i><i style="left:${CUT.c}%">C</i></span></div>`:''}${ph.map(x=>`<div class="cmpr${x.result==='positiv'?' pos':''}"><span>${c?'Tag '+(x.n-c.start+1):esc(fs(x.n))}${x.result==='positiv'?' ✦':''}<small>${esc(RES[x.result])}</small></span>${photoImg(x,'Teststreifen vom '+fs(x.n))}</div>`).join('')}${uncut?`<p class="cmpn">Noch nicht ausgerichtet? Tippe beim Test auf „Bearbeiten“ und dann auf „Streifen ausrichten“. Dann steht er hier genau unter den anderen.</p>`:''}</div>`}
+      const ci=c?m.cycles.indexOf(c):-1,pc=ci>0?m.cycles[ci-1]:null;
+      const ref=pc?m.tests.filter(x=>x.result==='positiv'&&x.photo&&hasMarks(x)&&x.n>=pc.start&&x.n<=pc.end).sort((a,b)=>a.n-b.n)[0]:null;
+      if(ph.length>=2||(ref&&ph.length)){const cut=ref||ph.some(x=>hasMarks(x)),uncut=ph.some(x=>!hasMarks(x));
+        body+=`<div class="cmp" data-title="${esc(c?'Zyklus ab '+f(c.start):'Tests')}" aria-label="Teststreifen im Vergleich">${cut?`<div class="cmph" aria-hidden="true"><b></b><span><i style="left:${CUT.t}%">T</i><i style="left:${CUT.c}%">C</i></span></div>`:''}${ref?`<div class="cmpr ref"><span>Letzter Zyklus ✦<small>Tag ${ref.n-pc.start+1}, positiv</small></span>${photoImg(ref,'Positiver Streifen aus dem letzten Zyklus')}</div>`:''}${ph.map(x=>`<div class="cmpr${x.result==='positiv'?' pos':''}"><span>${c?'Tag '+(x.n-c.start+1):esc(fs(x.n))}${x.result==='positiv'?' ✦':''}<small>${esc(RES[x.result])}</small></span>${photoImg(x,'Teststreifen vom '+fs(x.n))}</div>`).join('')}${uncut?`<p class="cmpn">Noch nicht ausgerichtet? Tippe beim Test auf „Bearbeiten“ und dann auf „Streifen ausrichten“. Dann steht er hier genau unter den anderen.</p>`:''}<div class="cmpa"><button data-a="cmpbig">Groß ansehen</button><button data-a="cmpshare">Als Bild teilen</button></div></div>`}
     }
     const sure=qdel===t.id;
     body+=`<div class="t">${t.photo?photoImg(t,'Foto vom Teststreifen, antippen zum Vergrößern'):''}
@@ -1172,6 +1235,26 @@ async function shrink(file){
     return await new Promise((ok,no)=>c.toBlob(b=>b?ok(b):no(new Error('blob')),'image/jpeg',.85));
   }finally{URL.revokeObjectURL(url)}
 }
+/* Vergleich als Bild zeichnen */
+async function cmpImage(src){
+  const rows=[...src.querySelectorAll('.cmpr')],W=1080,pad=48,lab=230,sw=W-pad*2-lab,sh=Math.round(sw*7/22),gap=26,top=150;
+  const H=top+rows.length*(sh+gap)+70;
+  const cv=document.createElement('canvas');cv.width=W;cv.height=H;const g=cv.getContext('2d');
+  g.fillStyle='#FBF4F7';g.fillRect(0,0,W,H);
+  g.fillStyle='#3B2350';g.font='italic 46px Georgia,serif';g.fillText(src.dataset.title||'Teststreifen',pad,80);
+  g.font='700 24px system-ui,sans-serif';g.fillStyle='#7B6890';
+  if(src.querySelector('.cmph')){g.textAlign='center';g.fillText('T',pad+lab+sw*CUT.t/100,top-16);g.fillText('C',pad+lab+sw*CUT.c/100,top-16);g.textAlign='left'}
+  for(let i=0;i<rows.length;i++){const r=rows[i],y=top+i*(sh+gap),img=r.querySelector('img');
+    const sp=r.querySelector(':scope>span'),sm=sp.querySelector('small'),t1=sp.firstChild?sp.firstChild.textContent.trim():'',t2=sm?sm.textContent:'';
+    g.fillStyle=r.classList.contains('ref')||r.classList.contains('pos')?'#7A3FE0':'#3B2350';g.font='600 30px system-ui,sans-serif';g.fillText(t1,pad,y+sh/2-4);
+    g.font='26px system-ui,sans-serif';g.fillStyle=r.classList.contains('pos')?'#7A3FE0':'#7B6890';g.fillText(t2,pad,y+sh/2+32);
+    g.save();g.beginPath();g.roundRect(pad+lab,y,sw,sh,18);g.clip();g.fillStyle=img&&img.classList.contains('cut')?'#fff':'#EFE7F3';g.fillRect(pad+lab,y,sw,sh);
+    if(img&&img.complete&&img.naturalWidth){const k=img.classList.contains('cut')?Math.max(sw/img.naturalWidth,sh/img.naturalHeight):Math.min(sw/img.naturalWidth,sh/img.naturalHeight),w=img.naturalWidth*k,h=img.naturalHeight*k;g.drawImage(img,pad+lab+(sw-w)/2,y+(sh-h)/2,w,h)}
+    g.restore()}
+  g.font='22px system-ui,sans-serif';g.fillStyle='#7B6890';g.fillText('Ovulationstests im Vergleich',pad,H-30);
+  const b=await new Promise(r=>cv.toBlob(r,'image/jpeg',.9));if(!b)return null;
+  return new File([b],`teststreifen-${todayS()}.jpg`,{type:'image/jpeg'});
+}
 async function delTest(id){const old=S.tests.find(x=>x.id===id);S.tests=S.tests.filter(x=>x.id!==id);if(old&&old.photo)await removePhoto(old.photo);await persist()}
 function dropPreview(){if(TF&&TF.preview){URL.revokeObjectURL(TF.preview);TF.preview=null;TF.blob=null}}
 async function removePhoto(id){await del('photo:'+id);const u=photoCache.get(id);if(u){URL.revokeObjectURL(u);photoCache.delete(id)}}
@@ -1191,7 +1274,7 @@ function stopTimer(){tEnd=null;clearInterval(tI);tI=null;drawTimer();if(KEY&&!SH
 /* ---------- Klicks und Eingaben ---------- */
 const A={
   async lock(){await del('remember');remembered=false;await lock()},
-  tab(e){tab=e.dataset.v;qdel=null;if(tab==='heute')bloomNext=true;window.scrollTo(0,0);renderApp()},
+  tab(e){A.ovclose();tab=e.dataset.v;qdel=null;if(tab==='heute')bloomNext=true;window.scrollTo(0,0);renderApp()},
   close(){if(SHEET&&SHEET.t==='test'){const b=TF&&TF.back;dropPreview();if(b){TF=null;openSheet({t:'day',date:b});return}}if(KEY&&SHEET&&SHEET.t==='day')persist();closeSheet()},
   day(e){openSheet({t:'day',date:e.dataset.v})},
   first(){openSheet({t:'first'})},
@@ -1211,6 +1294,17 @@ const A={
   rmphoto(){if(TF.preview)dropPreview();else TF.remove=true;TF.marks=null;TF.mdir=null;TF.mstep=0;renderSheet()},
   async deltest(){if(!TF.sure){TF.sure=true;renderSheet();return}
     await delTest(TF.id);A.close()},
+  cmpbig(e){const src=e.closest('.cmp');if(!src)return;
+    const o=document.createElement('div');o.className='ovl';o.setAttribute('role','dialog');o.setAttribute('aria-label','Teststreifen groß');
+    o.innerHTML=`<div class="ovh"><h3>${esc(src.dataset.title||'Vergleich')}</h3><button data-a="ovclose">Schließen</button></div>`;
+    o.append(src.cloneNode(true));o.insertAdjacentHTML('beforeend','<p class="ovt">Dreh dein Handy quer, dann werden die Streifen noch größer.</p>');
+    document.body.append(o);document.body.style.overflow='hidden'},
+  ovclose(){const o=$('.ovl');if(o)o.remove();document.body.style.overflow=''},
+  async cmpshare(e){const src=e.closest('.cmp');if(!src)return;
+    const file=await cmpImage(src);if(!file)return;
+    try{if(navigator.canShare&&navigator.canShare({files:[file]}))await navigator.share({files:[file]});
+      else{const a=document.createElement('a'),u=URL.createObjectURL(file);a.href=u;a.download=file.name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),6e4)}}
+    catch(err){if(err.name!=='AbortError')throw err}},
   async qdel(e){const id=e.dataset.v;if(qdel!==id){qdel=id;renderApp();return}
     qdel=null;await delTest(id);renderApp()},
   timer(){tEnd=Date.now()+5*6e4;if(!tI)tI=setInterval(drawTimer,1000);drawTimer();if(KEY&&!SHEET)renderApp()},
@@ -1256,7 +1350,7 @@ document.addEventListener('click',e=>{
   const fn=A[el.dataset.a];if(fn)Promise.resolve(fn(el)).catch(err=>{console.error(err);alert('Das hat nicht geklappt. Bitte versuch es noch einmal.')});
 });
 document.addEventListener('toggle',e=>{if(e.target.id==='set')settingsOpen=e.target.open},true);
-document.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.classList&&e.target.classList.contains('p')){e.preventDefault();e.target.dispatchEvent(new MouseEvent('click',{bubbles:true}));return}if(e.key==='Escape'){if($('.light'))$('.light').remove();else if(SHEET)A.close()}});
+document.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.classList&&e.target.classList.contains('p')){e.preventDefault();e.target.dispatchEvent(new MouseEvent('click',{bubbles:true}));return}if(e.key==='Escape'){if($('.light'))$('.light').remove();else if($('.ovl'))A.ovclose();else if(SHEET)A.close()}});
 window.addEventListener('focus',()=>setTimeout(()=>pickerUntil=0,1500));
 document.addEventListener('input',e=>{
   const i=e.target.dataset.i;if(!i)return;const v=e.target.value;
