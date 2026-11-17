@@ -132,6 +132,7 @@ svg.fl{display:block;width:100%;height:auto;overflow:visible}
 .cmpr>span{line-height:1.25}
 .cmpr img,.t .ph{display:block;width:100%;aspect-ratio:22/7;object-fit:contain;border-radius:10px;background:#EFE7F3}
 .cmpr img.cut,.t .ph.cut{object-fit:cover;background:#fff;box-shadow:inset 0 0 0 1px var(--line)}
+.cmpr small{display:block;font-size:12px;font-weight:600;color:var(--soft)}
 .cmpr.pos small{color:#7A3FE0}
 .cmpn{font-size:12.5px;color:var(--soft);margin:2px 2px 0;line-height:1.4}
 .doc{background:#fff;border-radius:20px;padding:16px}
@@ -502,7 +503,7 @@ function statusOf(m){
     return{h:`Tag ${dpo} nach dem Eisprung`,d:`Ein Schwangerschaftstest ist ab dem ${f(pt.from)} sinnvoll. Vorher kann er negativ sein, obwohl du schwanger bist.`,dpo};
   }
   if(c.pos==null&&T>=c.start+4){
-    const rec=m.tests.filter(t=>t.ratio!=null&&t.n>=T-1&&t.n<=T).sort((a,b)=>(b.date+(b.time||'')).localeCompare(a.date+(a.time||'')))[0];
+    const rec=null&&m.tests.filter(t=>t.ratio!=null&&t.n>=T-1&&t.n<=T).sort((a,b)=>(b.date+(b.time||'')).localeCompare(a.date+(a.time||'')))[0];
     if(rec&&rec.ratio>=.5&&rec.ratio<1){
       const nToday=m.tests.filter(t=>t.n===T).length;
       if(rec.n===T&&nToday===1)return{h:'Heute Abend nochmal testen',d:`Dein Wert steigt (${fr(rec.ratio)}). Ein zweiter Test am Abend, spätestens gegen 20 Uhr, hilft, den kurzen LH-Anstieg nicht zu verpassen.`};
@@ -732,7 +733,7 @@ function readGuide(){
     <li><b>Nach genau 5 Minuten ablesen.</b> Später können Linien nachdunkeln oder Verdunstungslinien entstehen.</li>
     <li><b>Bei Tageslicht ablesen,</b> Streifen flach hinlegen, ohne Blitz und ohne Schatten.</li>
     <li><b>Im Zweifel negativ:</b> Ist die Testlinie nur fast so dunkel wie die Kontrolllinie, gilt der Test als negativ. Dann am nächsten Tag weitertesten.</li>
-    <li><b>Fürs Foto</b> immer derselbe Ort, dasselbe Licht und der Griff rechts. Dann passen Fotovergleich und T/C-Messung besser.</li>
+    <li><b>Fürs Foto</b> immer derselbe Ort, dasselbe Licht und der Griff rechts. Dann lassen sich die Streifen im Vergleich am besten nebeneinander sehen.</li>
    </ul>
   </div>`;
 }
@@ -804,25 +805,20 @@ async function cutStrip(url,spec){
   const b=await new Promise(r=>cv.toBlob(r,'image/jpeg',.88));if(!b)return null;const out=URL.createObjectURL(b);cutCache.set(key,out);return out;
 }
 function tcBlock(t){
-  const has=t.preview||(t.photo&&!t.remove),v=t.ratio;
-  const step=t.mstep||0;
-  let img='';
-  if(has&&step){
+  const has=t.preview||(t.photo&&!t.remove);if(!has)return '';
+  const step=t.mstep||0,done=Array.isArray(t.marks)&&t.marks.length===2;
+  if(step){
     const src=t.preview?`src="${t.preview}"`:`data-photo="${esc(t.photo)}"`;
-    img=`<p class="mhint">${step===1?'Tippe auf die <b>Kontrolllinie (C)</b>, die Linie direkt am Griff.':'Tippe jetzt auf die <b>Testlinie (T)</b>. Ist keine zu sehen, tippe auf die Stelle, wo sie wäre.'}</p>
+    return `<div class="f"><span class="lab">Streifen ausrichten</span>
+     <p class="mhint">${step===1?'Tippe auf die <b>Kontrolllinie (C)</b>, die Linie direkt am Griff.':'Tippe jetzt auf die <b>Testlinie (T)</b>. Ist keine zu sehen, tippe auf die Stelle, wo sie wäre.'}</p>
      <div class="mbox"><img class="mimg" ${src} alt="Foto vom Teststreifen zum Antippen">${(t.marks||[]).map((mk,i)=>`<i class="mk2" style="left:${mk.x*100}%;top:${mk.y*100}%">${i?'T':'C'}</i>`).join('')}</div>
-     <button type="button" class="link" data-a="mcancel">Messen abbrechen</button>`;
+     <button type="button" class="link" data-a="mcancel">Abbrechen</button>
+     ${t.merr?`<p class="err" role="alert">${esc(t.merr)}</p>`:''}</div>`;
   }
-  return `<div class="f"><span class="lab">T/C-Wert</span>
-   <div class="tcv"><b>${fr(v)}</b><span>${v==null?'Noch nicht gemessen':TCL[tcLevel(v)]+(t.measured?', vom Foto gemessen':', geschätzt')}</span></div>
-   ${img}
-   ${has&&!step?`<button type="button" class="btn line full" data-a="measure">Auf dem Foto messen</button>`:''}
-   ${!step?`<label class="sl"><span class="small muted">${has?'Oder selbst einschätzen':'Ohne Foto selbst einschätzen'}: Wie dunkel ist die Testlinie im Vergleich zur Kontrolllinie?</span>
-    <input type="range" min="0" max="2" step="0.05" data-i="tf-ratio" value="${v??0}" aria-label="T/C-Wert">
-    <span class="slx small muted"><span style="left:0;transform:none">keine</span><span style="left:25%">halb</span><span style="left:50%">gleich</span><span style="right:0;left:auto;transform:none">doppelt</span></span></label>
-    ${v!=null?`<button type="button" class="link" data-a="rmratio">Wert löschen</button>`:''}`:''}
-   ${t.merr?`<p class="err" role="alert">${esc(t.merr)}</p>`:''}
-  </div>`;
+  return `<div class="f"><span class="lab">Streifen ausrichten</span>
+   <p class="small muted" style="margin-bottom:8px">${done?'Ausgerichtet. Der Streifen steht in der Übersicht genau unter den anderen.':'Tippe einmal auf C und T. Dann wird der Streifen ausgeschnitten und in der Übersicht genau unter den anderen ausgerichtet.'}</p>
+   <button type="button" class="btn line full" data-a="measure">${done?'Neu ausrichten':'Streifen ausrichten'}</button>
+   ${t.merr?`<p class="err" role="alert">${esc(t.merr)}</p>`:''}</div>`;
 }
 let mCanvas=null;
 async function measureTap(img,ev){
@@ -839,10 +835,8 @@ async function measureTap(img,ev){
     t.mC={d:l.d,dir};t.marks=[dir==='v'?{x:l.pos/cv.width,y:fy}:{x:fx,y:l.pos/cv.height}];t.mstep=2;t.merr='';renderSheet();return;
   }
   const l=lineAt(cv,x,y,t.mC.dir);
-  const ratio=Math.min(3,Math.round(l.d/t.mC.d*100)/100);
   t.marks.push(t.mC.dir==='v'?{x:(l.d<4?x:l.pos)/cv.width,y:fy}:{x:fx,y:(l.d<4?y:l.pos)/cv.height});
-  t.mdir=t.mC.dir;t.ratio=ratio;t.measured=true;t.mstep=0;t.merr='';
-  if(!t.result)t.result=ratio>=1?'positiv':'negativ';
+  t.mdir=t.mC.dir;t.mstep=0;t.merr='';
   renderSheet();
 }
 /* ---------- Ansichten ---------- */
@@ -907,13 +901,12 @@ function vTests(m){
   for(const t of all){const c=m.cycleOf(t.n),g=c?c.start:'none';
     if(g!==last){body+=`<h3 class="cyc">${c?'Zyklus ab '+f(c.start):'Ohne Zyklus'}</h3>`;last=g;
       const ph=all.filter(x=>x.type!=='hcg'&&x.photo&&(m.cycleOf(x.n)||{start:'none'}).start===g).sort((a,b)=>(a.date+(a.time||'')).localeCompare(b.date+(b.time||'')));
-      if(c)body+=tcChart(c,all.filter(x=>x.type!=='hcg'&&(m.cycleOf(x.n)||{}).start===c.start));
       if(ph.length>=2){const cut=ph.some(x=>hasMarks(x)),uncut=ph.some(x=>!hasMarks(x));
-        body+=`<div class="cmp" aria-label="Teststreifen im Vergleich">${cut?`<div class="cmph" aria-hidden="true"><b></b><span><i style="left:${CUT.t}%">T</i><i style="left:${CUT.c}%">C</i></span></div>`:''}${ph.map(x=>`<div class="cmpr${x.result==='positiv'?' pos':''}"><span>${c?'Tag '+(x.n-c.start+1):esc(fs(x.n))}${x.result==='positiv'?' ✦':''}${x.ratio!=null?`<small>${fr(x.ratio)}</small>`:''}</span>${photoImg(x,'Teststreifen vom '+fs(x.n))}</div>`).join('')}${uncut?`<p class="cmpn">Tipp: Öffne einen Test und tippe auf „Auf dem Foto messen“. Dann wird der Streifen ausgeschnitten und hier genau unter den anderen ausgerichtet.</p>`:''}</div>`}
+        body+=`<div class="cmp" aria-label="Teststreifen im Vergleich">${cut?`<div class="cmph" aria-hidden="true"><b></b><span><i style="left:${CUT.t}%">T</i><i style="left:${CUT.c}%">C</i></span></div>`:''}${ph.map(x=>`<div class="cmpr${x.result==='positiv'?' pos':''}"><span>${c?'Tag '+(x.n-c.start+1):esc(fs(x.n))}${x.result==='positiv'?' ✦':''}<small>${esc(RES[x.result])}</small></span>${photoImg(x,'Teststreifen vom '+fs(x.n))}</div>`).join('')}${uncut?`<p class="cmpn">Noch nicht ausgerichtet? Tippe beim Test auf „Bearbeiten“ und dann auf „Streifen ausrichten“. Dann steht er hier genau unter den anderen.</p>`:''}</div>`}
     }
     const sure=qdel===t.id;
     body+=`<div class="t">${t.photo?photoImg(t,'Foto vom Teststreifen, antippen zum Vergrößern'):''}
-      <button class="tin" data-a="edittest" data-v="${esc(t.id)}"><span class="m">${strip(t.result)}<span>${t.type==='hcg'?'<span class="kindl">Schwangerschaftstest</span>':''}<b class="${t.result}">${RES[t.result]}</b>${t.ratio!=null?` <span class="tcb">T/C ${fr(t.ratio)}</span>`:''} ${esc(fs(t.n))}${t.time?', '+esc(t.time)+' Uhr':''}${c?`<br><span class="muted small">Zyklustag ${t.n-c.start+1}</span>`:''}${t.note?`<br><span class="muted small">${esc(t.note)}</span>`:''}</span></span></button>
+      <button class="tin" data-a="edittest" data-v="${esc(t.id)}"><span class="m">${strip(t.result)}<span>${t.type==='hcg'?'<span class="kindl">Schwangerschaftstest</span>':''}<b class="${t.result}">${RES[t.result]}</b><br>${esc(fs(t.n))}${t.time?', '+esc(t.time)+' Uhr':''}${c?`<br><span class="muted small">Zyklustag ${t.n-c.start+1}</span>`:''}${t.note?`<br><span class="muted small">${esc(t.note)}</span>`:''}</span></span></button>
       <div class="ta"><button data-a="edittest" data-v="${esc(t.id)}">Bearbeiten</button><button class="del${sure?' sure':''}" data-a="qdel" data-v="${esc(t.id)}">${sure?'Wirklich löschen?':'Löschen'}</button></div></div>`}
   return page(body,'Deine Tests');
 }
@@ -950,7 +943,7 @@ function vVerlauf(m){
   const avgPos=posDays.length?Math.round(posDays.reduce((a,b)=>a+b,0)/posDays.length):null;
   let body=m.done.length?`<p class="summary">Dein Zyklus dauert meist ${m.avgLen} Tage${m.avgBleed?`, deine Blutung etwa ${m.avgBleed}`:''}.${avgPos?` Dein Test wird meist um Tag ${avgPos} positiv.`:''}</p>`:`<p class="summary">Mit jedem Zyklus wächst hier eine neue Blüte.</p>`;
   body+='<div class="minis">'+cs.map(c=>{const l=c.len??(m.T-c.start+1);return `<div class="mini">${flower(m,c,Math.max(l,1),{mini:true})}<b>${l} ${l===1?'Tag':'Tage'}</b>${fs(c.start)}${c.end!=null?' bis '+fs(c.end):', läuft gerade'}</div>`}).join('')+'</div>';
-  body+=tcCompare(m);
+
   const revs=m.cycles.filter(c=>c.end!=null).slice(-3).reverse();
   if(revs.length)body+=`<h3 class="cyc">Rückblick</h3>`+revs.map(c=>review(m,c)).join('');
   const days=S.lastBackup?Math.floor(m.T-num(S.lastBackup)):null;
@@ -1215,7 +1208,7 @@ const A={
   mcancel(){TF.mstep=0;[TF.marks,TF.mdir]=TF.oldMarks||[null,null];TF.merr='';renderSheet()},
   rmratio(){TF.ratio=null;TF.measured=false;renderSheet()},
   pick(){pickerUntil=Date.now()+5*6e4},
-  rmphoto(){if(TF.preview)dropPreview();else TF.remove=true;TF.marks=null;TF.mdir=null;if(TF.measured){TF.ratio=null;TF.measured=false}TF.mstep=0;renderSheet()},
+  rmphoto(){if(TF.preview)dropPreview();else TF.remove=true;TF.marks=null;TF.mdir=null;TF.mstep=0;renderSheet()},
   async deltest(){if(!TF.sure){TF.sure=true;renderSheet();return}
     await delTest(TF.id);A.close()},
   async qdel(e){const id=e.dataset.v;if(qdel!==id){qdel=id;renderApp();return}
@@ -1276,7 +1269,7 @@ document.addEventListener('input',e=>{
 document.addEventListener('change',async e=>{
   if(e.target.id!=='pf'||!e.target.files[0])return;
   pickerUntil=0;
-  try{const blob=await shrink(e.target.files[0]);dropPreview();TF.blob=blob;TF.preview=URL.createObjectURL(blob);TF.marks=null;TF.mdir=null;TF.err='';renderSheet()}
+  try{const blob=await shrink(e.target.files[0]);dropPreview();TF.blob=blob;TF.preview=URL.createObjectURL(blob);TF.marks=null;TF.mdir=null;TF.err='';if(TF.type!=='hcg'){TF.oldMarks=[null,null];TF.mstep=1;TF.marks=[];TF.merr=''}renderSheet()}
   catch(err){console.error(err);TF.err='Dieses Foto ließ sich nicht öffnen. Wähl ein anderes aus.';renderSheet()}
 });
 const F={
