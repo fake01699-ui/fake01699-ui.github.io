@@ -124,9 +124,16 @@ svg.fl{display:block;width:100%;height:auto;overflow:visible}
 .folic .small{display:block}
 .tick{width:30px;height:30px;flex:none;border-radius:50%;box-shadow:inset 0 0 0 2px var(--accent);display:grid;place-items:center;color:#fff;font-weight:700;font-size:17px;transition:background .15s}
 .folic.on .tick{background:linear-gradient(120deg,var(--accent),var(--accent2));box-shadow:none}
-.cmp{background:var(--card);border-radius:22px;padding:10px;margin-bottom:12px;display:grid;gap:6px}
-.cmpr{display:grid;grid-template-columns:62px 1fr;gap:8px;align-items:center;font-size:14px;color:var(--soft)}
-.cmpr img{width:100%;height:46px;object-fit:cover;border-radius:10px;background:var(--line)}
+.cmp{background:var(--card);border-radius:22px;padding:12px 12px 10px;margin-bottom:12px;display:grid;gap:8px}
+.cmph{display:grid;grid-template-columns:58px 1fr;gap:10px;font-size:12px;font-weight:700;color:var(--soft);letter-spacing:.04em}
+.cmph span{position:relative;height:14px}
+.cmph i{position:absolute;transform:translateX(-50%);font-style:normal}
+.cmpr{display:grid;grid-template-columns:58px 1fr;gap:10px;align-items:center;font-size:14px;color:var(--soft)}
+.cmpr>span{line-height:1.25}
+.cmpr img,.t .ph{display:block;width:100%;aspect-ratio:22/7;object-fit:contain;border-radius:10px;background:#EFE7F3}
+.cmpr img.cut,.t .ph.cut{object-fit:cover;background:#fff;box-shadow:inset 0 0 0 1px var(--line)}
+.cmpr.pos small{color:#7A3FE0}
+.cmpn{font-size:12.5px;color:var(--soft);margin:2px 2px 0;line-height:1.4}
 .doc{background:#fff;border-radius:20px;padding:16px}
 .doc dl{display:grid;grid-template-columns:1fr auto;gap:8px 12px;margin:0 0 16px}
 .doc dt{color:var(--soft)}
@@ -240,9 +247,14 @@ svg.fl{display:block;width:100%;height:auto;overflow:visible}
 
 /* Tests */
 .cyc{font:italic 400 22px var(--serif);margin:24px 0 10px}
-.t{display:block;width:100%;text-align:left;background:var(--card);border-radius:22px;padding:10px;margin-bottom:10px}
-.t img{display:block;width:100%;height:116px;object-fit:cover;border-radius:15px;background:var(--line);margin-bottom:8px}
-.t .m{display:flex;gap:12px;align-items:center;padding:2px 6px}
+.t{background:var(--card);border-radius:22px;padding:10px;margin-bottom:10px}
+.t .ph{border-radius:15px;margin-bottom:6px;cursor:zoom-in}
+.t .tin{display:block;width:100%;text-align:left;border-radius:14px}
+.t .m{display:flex;gap:12px;align-items:center;padding:6px}
+.t .ta{display:flex;justify-content:flex-end;gap:4px;border-top:1px solid var(--line);margin-top:6px;padding-top:4px}
+.t .ta button{min-height:40px;padding:0 12px;border-radius:12px;font-size:14px;color:var(--soft)}
+.t .ta .del{color:#A81C49}
+.t .ta .del.sure{background:#A81C49;color:#fff;font-weight:600}
 .t .m .strip{flex:none}
 .t b.positiv{color:#7A3FE0}
 .strip{display:block;width:15px;height:28px}
@@ -381,7 +393,7 @@ async function enc(k,bytes){const iv=rnd(12);return {iv,ct:new Uint8Array(await 
 const dec=(k,b)=>crypto.subtle.decrypt({name:'AES-GCM',iv:b.iv},k,b.ct);
 
 /* ---------- Sitzung ---------- */
-let bloomNext=true,settingsOpen=false,remembered=false;
+let bloomNext=true,settingsOpen=false,remembered=false,qdel=null;
 let KEY=null,S=null,tab='heute',vy,vm,SHEET=null,TF=null,photoCache=new Map(),saveChain=Promise.resolve(),saveT=null,bk=null;
 const blank=()=>({v:1,settings:{cycleLen:null},days:{},tests:[],lastBackup:null});
 function persist(){
@@ -770,6 +782,27 @@ function tcChart(c,ts){
    <text x="${X(peak.x).toFixed(1)}" y="${(Y(peak.y)-11).toFixed(1)}" text-anchor="middle" class="tct tcp">${fr(peak.y)}</text>
   </svg><figcaption>T/C-Wert nach Zyklustag. Am höchsten Punkt ist dein LH-Anstieg am stärksten, der Eisprung folgt meist 24 bis 48 Stunden später.</figcaption></figure>`;
 }
+/* Streifen-Ausschnitt: nutzt die beim Messen getippten Linien C und T */
+const CUT={a:1.7,h:1.4};CUT.w=CUT.a*2+1;CUT.t=+(CUT.a/CUT.w*100).toFixed(1);CUT.c=+((CUT.a+1)/CUT.w*100).toFixed(1);
+const hasMarks=t=>Array.isArray(t.marks)&&t.marks.length===2;
+function photoImg(t,alt){const mk=hasMarks(t)?` data-marks="${esc(JSON.stringify({m:t.marks,d:t.mdir||''}))}"`:'';return `<img class="ph" data-photo="${esc(t.photo)}"${mk} alt="${esc(alt)}">`}
+const cutCache=new Map();
+async function cutStrip(url,spec){
+  const key=url+spec;if(cutCache.has(key))return cutCache.get(key);
+  const {m,d}=JSON.parse(spec);
+  const im=new Image();im.src=url;await im.decode();
+  const W=im.naturalWidth,H=im.naturalHeight,C={x:m[0].x*W,y:m[0].y*H},T={x:m[1].x*W,y:m[1].y*H};
+  const dir=d||(Math.abs(C.x-T.x)>=Math.abs(C.y-T.y)?'v':'h');
+  const L=dir==='v'?Math.abs(C.x-T.x):Math.abs(C.y-T.y);
+  if(L<4)return null;
+  const ang=dir==='v'?(C.x>=T.x?0:Math.PI):(C.y>=T.y?Math.PI/2:-Math.PI/2);
+  const mid={x:(C.x+T.x)/2,y:(C.y+T.y)/2};
+  const cw=880,ch=Math.round(cw*CUT.h/CUT.w),sc=cw/(CUT.w*L);
+  const cv=document.createElement('canvas');cv.width=cw;cv.height=ch;const g=cv.getContext('2d');
+  g.fillStyle='#fff';g.fillRect(0,0,cw,ch);
+  g.translate(cw/2,ch/2);g.scale(sc,sc);g.rotate(-ang);g.drawImage(im,-mid.x,-mid.y);
+  const b=await new Promise(r=>cv.toBlob(r,'image/jpeg',.88));if(!b)return null;const out=URL.createObjectURL(b);cutCache.set(key,out);return out;
+}
 function tcBlock(t){
   const has=t.preview||(t.photo&&!t.remove),v=t.ratio;
   const step=t.mstep||0;
@@ -808,7 +841,7 @@ async function measureTap(img,ev){
   const l=lineAt(cv,x,y,t.mC.dir);
   const ratio=Math.min(3,Math.round(l.d/t.mC.d*100)/100);
   t.marks.push(t.mC.dir==='v'?{x:(l.d<4?x:l.pos)/cv.width,y:fy}:{x:fx,y:(l.d<4?y:l.pos)/cv.height});
-  t.ratio=ratio;t.measured=true;t.mstep=0;t.merr='';
+  t.mdir=t.mC.dir;t.ratio=ratio;t.measured=true;t.mstep=0;t.merr='';
   if(!t.result)t.result=ratio>=1?'positiv':'negativ';
   renderSheet();
 }
@@ -875,10 +908,13 @@ function vTests(m){
     if(g!==last){body+=`<h3 class="cyc">${c?'Zyklus ab '+f(c.start):'Ohne Zyklus'}</h3>`;last=g;
       const ph=all.filter(x=>x.type!=='hcg'&&x.photo&&(m.cycleOf(x.n)||{start:'none'}).start===g).sort((a,b)=>(a.date+(a.time||'')).localeCompare(b.date+(b.time||'')));
       if(c)body+=tcChart(c,all.filter(x=>x.type!=='hcg'&&(m.cycleOf(x.n)||{}).start===c.start));
-      if(ph.length>=2)body+=`<div class="cmp" aria-label="Teststreifen im Vergleich">${ph.map(x=>`<div class="cmpr"><span>${c?'Tag '+(x.n-c.start+1):esc(fs(x.n))}${x.result==='positiv'?' ✦':''}${x.ratio!=null?`<small>${fr(x.ratio)}</small>`:''}</span><img data-photo="${esc(x.photo)}" alt="Teststreifen vom ${esc(fs(x.n))}"></div>`).join('')}</div>`;
+      if(ph.length>=2){const cut=ph.some(x=>hasMarks(x)),uncut=ph.some(x=>!hasMarks(x));
+        body+=`<div class="cmp" aria-label="Teststreifen im Vergleich">${cut?`<div class="cmph" aria-hidden="true"><b></b><span><i style="left:${CUT.t}%">T</i><i style="left:${CUT.c}%">C</i></span></div>`:''}${ph.map(x=>`<div class="cmpr${x.result==='positiv'?' pos':''}"><span>${c?'Tag '+(x.n-c.start+1):esc(fs(x.n))}${x.result==='positiv'?' ✦':''}${x.ratio!=null?`<small>${fr(x.ratio)}</small>`:''}</span>${photoImg(x,'Teststreifen vom '+fs(x.n))}</div>`).join('')}${uncut?`<p class="cmpn">Tipp: Öffne einen Test und tippe auf „Auf dem Foto messen“. Dann wird der Streifen ausgeschnitten und hier genau unter den anderen ausgerichtet.</p>`:''}</div>`}
     }
-    body+=`<button class="t" data-a="edittest" data-v="${esc(t.id)}">${t.photo?`<img data-photo="${esc(t.photo)}" alt="Foto vom Teststreifen">`:''}
-      <span class="m">${strip(t.result)}<span>${t.type==='hcg'?'<span class="kindl">Schwangerschaftstest</span>':''}<b class="${t.result}">${RES[t.result]}</b>${t.ratio!=null?` <span class="tcb">T/C ${fr(t.ratio)}</span>`:''} ${esc(fs(t.n))}${t.time?', '+esc(t.time)+' Uhr':''}${c?`<br><span class="muted small">Zyklustag ${t.n-c.start+1}</span>`:''}${t.note?`<br><span class="muted small">${esc(t.note)}</span>`:''}</span></span></button>`}
+    const sure=qdel===t.id;
+    body+=`<div class="t">${t.photo?photoImg(t,'Foto vom Teststreifen, antippen zum Vergrößern'):''}
+      <button class="tin" data-a="edittest" data-v="${esc(t.id)}"><span class="m">${strip(t.result)}<span>${t.type==='hcg'?'<span class="kindl">Schwangerschaftstest</span>':''}<b class="${t.result}">${RES[t.result]}</b>${t.ratio!=null?` <span class="tcb">T/C ${fr(t.ratio)}</span>`:''} ${esc(fs(t.n))}${t.time?', '+esc(t.time)+' Uhr':''}${c?`<br><span class="muted small">Zyklustag ${t.n-c.start+1}</span>`:''}${t.note?`<br><span class="muted small">${esc(t.note)}</span>`:''}</span></span></button>
+      <div class="ta"><button data-a="edittest" data-v="${esc(t.id)}">Bearbeiten</button><button class="del${sure?' sure':''}" data-a="qdel" data-v="${esc(t.id)}">${sure?'Wirklich löschen?':'Löschen'}</button></div></div>`}
   return page(body,'Deine Tests');
 }
 function review(m,c){
@@ -1130,7 +1166,9 @@ async function photoUrl(id){
   const u=URL.createObjectURL(new Blob([await dec(KEY,b)],{type:'image/jpeg'}));
   photoCache.set(id,u);return u;
 }
-function hydrate(r){r.querySelectorAll('img[data-photo]').forEach(async i=>{const u=await photoUrl(i.dataset.photo).catch(()=>null);if(u)i.src=u})}
+function hydrate(r){r.querySelectorAll('img[data-photo]').forEach(async i=>{const u=await photoUrl(i.dataset.photo).catch(()=>null);if(!u)return;i.dataset.full=u;
+  if(i.dataset.marks){const c=await cutStrip(u,i.dataset.marks).catch(()=>null);if(c){i.src=c;i.classList.add('cut');return}}
+  i.src=u})}
 async function shrink(file){
   const url=URL.createObjectURL(file);
   try{
@@ -1141,6 +1179,7 @@ async function shrink(file){
     return await new Promise((ok,no)=>c.toBlob(b=>b?ok(b):no(new Error('blob')),'image/jpeg',.85));
   }finally{URL.revokeObjectURL(url)}
 }
+async function delTest(id){const old=S.tests.find(x=>x.id===id);S.tests=S.tests.filter(x=>x.id!==id);if(old&&old.photo)await removePhoto(old.photo);await persist()}
 function dropPreview(){if(TF&&TF.preview){URL.revokeObjectURL(TF.preview);TF.preview=null;TF.blob=null}}
 async function removePhoto(id){await del('photo:'+id);const u=photoCache.get(id);if(u){URL.revokeObjectURL(u);photoCache.delete(id)}}
 
@@ -1159,7 +1198,7 @@ function stopTimer(){tEnd=null;clearInterval(tI);tI=null;drawTimer();if(KEY&&!SH
 /* ---------- Klicks und Eingaben ---------- */
 const A={
   async lock(){await del('remember');remembered=false;await lock()},
-  tab(e){tab=e.dataset.v;if(tab==='heute')bloomNext=true;window.scrollTo(0,0);renderApp()},
+  tab(e){tab=e.dataset.v;qdel=null;if(tab==='heute')bloomNext=true;window.scrollTo(0,0);renderApp()},
   close(){if(SHEET&&SHEET.t==='test'){const b=TF&&TF.back;dropPreview();if(b){TF=null;openSheet({t:'day',date:b});return}}if(KEY&&SHEET&&SHEET.t==='day')persist();closeSheet()},
   day(e){openSheet({t:'day',date:e.dataset.v})},
   first(){openSheet({t:'first'})},
@@ -1170,15 +1209,17 @@ const A={
   sym(e){const d=dayOf(SHEET.date),v=e.dataset.v,a=d.symptoms||(d.symptoms=[]),i=a.indexOf(v);i<0?a.push(v):a.splice(i,1);prune(SHEET.date);persist();renderSheet()},
   newtest(e){const back=SHEET&&SHEET.t==='day'?SHEET.date:null;TF={id:null,date:e.dataset.v,time:nowTime(),result:null,photo:null,note:'',back,type:e.dataset.k==='hcg'?'hcg':'lh'};openSheet({t:'test'})},
   tkind(e){TF.type=e.dataset.v;if(TF.type==='hcg'&&TF.result==='ungueltig')TF.result=null;TF.mstep=0;renderSheet()},
-  edittest(e){const t=S.tests.find(x=>x.id===e.dataset.v);if(!t)return;const back=SHEET&&SHEET.t==='day'?SHEET.date:null;TF={id:t.id,date:t.date,time:t.time||'',result:t.result,photo:t.photo||null,note:t.note||'',ratio:t.ratio??null,measured:!!t.measured,type:t.type||'lh',back};openSheet({t:'test'})},
+  edittest(e){const t=S.tests.find(x=>x.id===e.dataset.v);if(!t)return;const back=SHEET&&SHEET.t==='day'?SHEET.date:null;TF={id:t.id,date:t.date,time:t.time||'',result:t.result,photo:t.photo||null,note:t.note||'',ratio:t.ratio??null,measured:!!t.measured,type:t.type||'lh',marks:hasMarks(t)?t.marks:null,mdir:t.mdir||null,back};qdel=null;openSheet({t:'test'})},
   res(e){TF.result=e.dataset.v;TF.err='';renderSheet()},
-  measure(){TF.mstep=1;TF.marks=[];TF.merr='';renderSheet()},
-  mcancel(){TF.mstep=0;TF.marks=[];TF.merr='';renderSheet()},
+  measure(){TF.oldMarks=[TF.marks,TF.mdir];TF.mstep=1;TF.marks=[];TF.merr='';renderSheet()},
+  mcancel(){TF.mstep=0;[TF.marks,TF.mdir]=TF.oldMarks||[null,null];TF.merr='';renderSheet()},
   rmratio(){TF.ratio=null;TF.measured=false;renderSheet()},
   pick(){pickerUntil=Date.now()+5*6e4},
-  rmphoto(){if(TF.preview)dropPreview();else TF.remove=true;if(TF.measured){TF.ratio=null;TF.measured=false}TF.mstep=0;renderSheet()},
+  rmphoto(){if(TF.preview)dropPreview();else TF.remove=true;TF.marks=null;TF.mdir=null;if(TF.measured){TF.ratio=null;TF.measured=false}TF.mstep=0;renderSheet()},
   async deltest(){if(!TF.sure){TF.sure=true;renderSheet();return}
-    const old=S.tests.find(x=>x.id===TF.id);S.tests=S.tests.filter(x=>x.id!==TF.id);if(old&&old.photo)await removePhoto(old.photo);await persist();A.close()},
+    await delTest(TF.id);A.close()},
+  async qdel(e){const id=e.dataset.v;if(qdel!==id){qdel=id;renderApp();return}
+    qdel=null;await delTest(id);renderApp()},
   timer(){tEnd=Date.now()+5*6e4;if(!tI)tI=setInterval(drawTimer,1000);drawTimer();if(KEY&&!SHEET)renderApp()},
   tstop:stopTimer,
   tres(){const d=todayS();stopTimer();TF={id:null,date:d,time:nowTime(),result:null,photo:null,note:'',back:null,type:'lh'};openSheet({t:'test'});const pf=$('#pf');if(pf){pickerUntil=Date.now()+5*6e4;pf.click()}},
@@ -1216,8 +1257,8 @@ const unb64=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
 document.addEventListener('click',e=>{
   const mi=e.target.closest('.mimg');
   if(mi&&TF&&TF.mstep){e.preventDefault();if(mi.complete&&mi.naturalWidth)measureTap(mi,e).catch(err=>{console.error(err);TF.merr='Das Foto ließ sich nicht auswerten. Schätze den Wert stattdessen.';TF.mstep=0;renderSheet()});return}
-  const img=e.target.closest('.t img,.prev');
-  if(img&&img.src&&!e.target.closest('[data-a="pick"]')){e.preventDefault();e.stopPropagation();const l=document.createElement('div');l.className='light';l.innerHTML=`<img alt="Foto vom Teststreifen" src="${img.src}">`;l.onclick=()=>l.remove();document.body.append(l);return}
+  const img=e.target.closest('.t img,.cmpr img,.prev');
+  if(img&&img.src&&!e.target.closest('[data-a="pick"]')){e.preventDefault();e.stopPropagation();const l=document.createElement('div');l.className='light';l.innerHTML=`<img alt="Foto vom Teststreifen" src="${img.dataset.full||img.src}">`;l.onclick=()=>l.remove();document.body.append(l);return}
   const el=e.target.closest('[data-a]');if(!el)return;
   const fn=A[el.dataset.a];if(fn)Promise.resolve(fn(el)).catch(err=>{console.error(err);alert('Das hat nicht geklappt. Bitte versuch es noch einmal.')});
 });
@@ -1235,7 +1276,7 @@ document.addEventListener('input',e=>{
 document.addEventListener('change',async e=>{
   if(e.target.id!=='pf'||!e.target.files[0])return;
   pickerUntil=0;
-  try{const blob=await shrink(e.target.files[0]);dropPreview();TF.blob=blob;TF.preview=URL.createObjectURL(blob);TF.err='';renderSheet()}
+  try{const blob=await shrink(e.target.files[0]);dropPreview();TF.blob=blob;TF.preview=URL.createObjectURL(blob);TF.marks=null;TF.mdir=null;TF.err='';renderSheet()}
   catch(err){console.error(err);TF.err='Dieses Foto ließ sich nicht öffnen. Wähl ein anderes aus.';renderSheet()}
 });
 const F={
@@ -1250,6 +1291,7 @@ const F={
     if(t.photo&&photo!==t.photo)await removePhoto(t.photo);
     const hc=t.type==='hcg';
     const rec={id:t.id||crypto.randomUUID(),date:t.date,time:t.time,result:t.result,photo,note:t.note,ratio:hc?null:t.ratio??null,measured:!hc&&t.ratio!=null&&!!t.measured};
+    if(!hc&&photo&&hasMarks(t)){rec.marks=t.marks;if(t.mdir)rec.mdir=t.mdir}
     if(hc)rec.type='hcg';
     S.tests=S.tests.filter(x=>x.id!==rec.id).concat(rec);
     await persist();
