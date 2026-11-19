@@ -184,6 +184,10 @@ svg.fl{display:block;width:100%;height:auto;overflow:visible}
 .ovl .cmpr img{border-radius:12px}
 .ovl .ovt{font-size:13px;color:var(--soft);text-align:center;margin-top:10px}
 @media (orientation:landscape){.ovl .cmpr,.ovl .cmph{grid-template-columns:110px 1fr;gap:12px}.ovl .cmph b{display:block}.ovl .cmpr>.cl{display:block}.ovl .cmpr small{display:block}.ovl .ovt{display:none}.ovl .cmp{max-width:1100px;margin:0 auto}}
+.lightchk{margin-top:10px;font-size:14.5px;line-height:1.4;color:var(--soft);background:var(--card);border-radius:16px;padding:10px 12px}
+.lightchk.ok{color:#2E7D5B}
+.lightchk.warn{background:#FFF1D6;color:#5A3A00}
+.cmpr .cl .lt{display:block;margin-top:3px;font-size:11.5px;font-weight:600;color:#B5651D;line-height:1.2}
 .qwarn{background:#FFF1D6;color:#5A3A00;border-radius:18px;padding:12px 14px;margin-bottom:14px}
 .qwarn p{font-size:14.5px;margin:4px 0 10px}
 .qwarn .row{display:flex;gap:8px}.qwarn .btn{flex:1;min-height:46px;font-size:15px;padding:0 10px}
@@ -415,7 +419,9 @@ textarea{min-height:92px;resize:vertical}
  .dot.plan{background:#3A2A5A}
  .dot.pred{background:#4A2234}
  .f-spot{background:#5A2A3A}
- .qwarn{background:#3F2F10;color:#FFE3A8}
+ .qwarn,.lightchk.warn{background:#3F2F10;color:#FFE3A8}
+ .lightchk.ok{color:#7FD3AE}
+ .cmpr .cl .lt{color:#F2B26B}
  .ctrc{fill:#241A33;fill-opacity:.95}
  .res button{background:#2B2040}
  .fut{fill:rgba(255,255,255,.1)}
@@ -931,7 +937,50 @@ async function cutStrip(url,spec){
   const cv=document.createElement('canvas');cv.width=cw;cv.height=ch;const g=cv.getContext('2d');
   g.fillStyle='#fff';g.fillRect(0,0,cw,ch);
   g.translate(cw/2,ch/2);g.scale(sc,sc);g.rotate(-ang);g.drawImage(im,-mid.x,-mid.y);
+  g.setTransform(1,0,0,1,0,0);try{lightCache.set(key,stripStats(cv))}catch(e){console.error(e)}
   const b=await new Promise(r=>cv.toBlob(r,'image/jpeg',.88));if(!b)return null;const out=URL.createObjectURL(b);cutCache.set(key,out);return out;
+}
+/* Licht-Check: Farbe des weißen Streifenpapiers (ohne Linien und Griff) */
+const lightCache=new Map();
+function stripStats(cv){
+  const W=cv.width,H=cv.height,d=cv.getContext('2d',{willReadFrequently:true}).getImageData(0,Math.round(H*.38),W,Math.round(H*.24)),px=[];
+  const t=CUT.t/100*W,c=CUT.c/100*W,ex=W*.05,x0=W*.06,x1=Math.min(W,c+W*.1);
+  for(let y=0;y<d.height;y+=2)for(let x=Math.round(x0);x<x1;x+=2){if(Math.abs(x-t)<ex||Math.abs(x-c)<ex)continue;const k=(y*d.width+x)*4;px.push([d.data[k],d.data[k+1],d.data[k+2]])}
+  if(px.length<50)return null;
+  px.sort((a,b)=>(b[0]+b[1]+b[2])-(a[0]+a[1]+a[2]));const top=px.slice(0,Math.round(px.length*.6));
+  const mr=top.reduce((a,p)=>a+p[0],0)/top.length,mg=top.reduce((a,p)=>a+p[1],0)/top.length,mb=top.reduce((a,p)=>a+p[2],0)/top.length;
+  return {Y:.299*mr+.587*mg+.114*mb,w:mr-mb};
+}
+async function lightOf(url,spec){await cutStrip(url,spec);return lightCache.get(url+spec)||null}
+const med=a=>{const s=a.slice().sort((x,y)=>x-y),n=s.length;return n%2?s[(n-1)/2]:(s[n/2-1]+s[n/2])/2};
+function lightDiff(st,refs){
+  if(!st||refs.length<2)return null;
+  const dY=st.Y-med(refs.map(r=>r.Y)),dw=st.w-med(refs.map(r=>r.w)),out=[];
+  if(dY>=16)out.push('heller');else if(dY<=-16)out.push('dunkler');
+  if(dw>=12)out.push('gelblicher');else if(dw<=-12)out.push('bläulicher');
+  return out;
+}
+const LIGHT_TIP='Für einen fairen Vergleich: immer am gleichen Ort, mit gleichem Licht (am besten Tageslicht), ohne Blitz.';
+async function fillLight(){
+  const el=$('#sheet [data-lc]');if(!el||!TF||!Array.isArray(TF.marks)||TF.marks.length!==2)return;
+  const url=TF.preview||(TF.photo?await photoUrl(TF.photo).catch(()=>null):null);if(!url)return;
+  const st=await lightOf(url,JSON.stringify({m:TF.marks,d:TF.mdir||''})).catch(()=>null);
+  const others=S.tests.filter(x=>x.id!==TF.id&&x.photo&&x.type!=='hcg'&&hasMarks(x)).sort((a,b)=>(b.date+(b.time||'')).localeCompare(a.date+(a.time||''))).slice(0,8);
+  const refs=[];for(const o of others){const u=await photoUrl(o.photo).catch(()=>null);if(!u)continue;const r=await lightOf(u,JSON.stringify({m:o.marks,d:o.mdir||''})).catch(()=>null);if(r)refs.push(r)}
+  if(!$('#sheet [data-lc]'))return;
+  const d=lightDiff(st,refs);
+  if(d==null){el.innerHTML='<b>Licht-Check:</b> Sobald zwei weitere Fotos ausgerichtet sind, vergleiche ich hier das Licht.';el.className='lightchk';return}
+  if(!d.length){el.innerHTML='<b>✓ Licht passt.</b> Ähnlich wie bei deinen anderen Fotos.';el.className='lightchk ok';return}
+  el.innerHTML=`<b>Anderes Licht:</b> Dieses Foto ist ${d.join(' und ')} als deine anderen. Linien wirken dadurch heller oder dunkler, als sie sind. ${LIGHT_TIP}`;el.className='lightchk warn';
+}
+async function markLight(root){
+  for(const cmp of root.querySelectorAll('.cmp')){
+    const rows=[...cmp.querySelectorAll('.cmpr:not(.ref)')].map(r=>({r,st:(r.querySelector('img.cut')||{})._st})).filter(o=>o.st);
+    if(rows.length<3)continue;
+    for(const o of rows){const d=lightDiff(o.st,rows.filter(x=>x!==o).map(x=>x.st));const cl=o.r.querySelector('.cl');if(!cl)continue;
+      cl.querySelector('.lt')?.remove();
+      if(d&&d.length)cl.insertAdjacentHTML('beforeend',`<span class="lt" title="${esc('Licht '+d.join(' und ')+' als bei den anderen Fotos')}">☀︎ Licht ${esc(d.join(', '))}</span>`)}
+  }
 }
 function tcBlock(t){
   const has=t.preview||(t.photo&&!t.remove);if(!has)return '';
@@ -950,6 +999,7 @@ function tcBlock(t){
   return `${qw}<div class="f"><span class="lab">Streifen ausrichten</span>
    <p class="small muted" style="margin-bottom:8px">${done?'Ausgerichtet. Der Streifen steht in der Übersicht genau unter den anderen.':'Tippe einmal auf C und T. Dann wird der Streifen ausgeschnitten und in der Übersicht genau unter den anderen ausgerichtet.'}</p>
    <button type="button" class="btn line full" data-a="measure">${done?'Neu ausrichten':'Streifen ausrichten'}</button>
+   ${done&&t.type!=='hcg'?'<p class="lightchk" data-lc aria-live="polite">Licht wird geprüft …</p>':''}
    ${t.merr?`<p class="err" role="alert">${esc(t.merr)}</p>`:''}</div>`;
 }
 let mCanvas=null;
@@ -1127,6 +1177,7 @@ function renderSheet(fresh){
   $('#sheet').innerHTML=`<div class="back" data-a="close"></div><div class="sheet" role="dialog" aria-modal="true" style="${fresh?'':'animation:none'}">${html}</div>`;
   $('#sheet .sheet').scrollTop=top;
   hydrate($('#sheet'));
+  if(SHEET.t==='test')fillLight().catch(e=>console.error(e));
 }
 const head=(t,sub)=>`<div class="sh"><div><h2>${esc(t)}</h2>${sub?`<p class="muted small">${esc(sub)}</p>`:''}</div><button class="link" data-a="close">Fertig</button></div>`;
 function dayOf(s){return S.days[s]||(S.days[s]={})}
@@ -1323,9 +1374,9 @@ async function photoUrl(id){
   const u=URL.createObjectURL(new Blob([await dec(KEY,b)],{type:'image/jpeg'}));
   photoCache.set(id,u);return u;
 }
-function hydrate(r){r.querySelectorAll('img[data-photo]').forEach(async i=>{const u=await photoUrl(i.dataset.photo).catch(()=>null);if(!u)return;i.dataset.full=u;
-  if(i.dataset.marks){const c=await cutStrip(u,i.dataset.marks).catch(()=>null);if(c){i.src=c;i.classList.add('cut');return}}
-  i.src=u})}
+function hydrate(r){Promise.all([...r.querySelectorAll('img[data-photo]')].map(async i=>{const u=await photoUrl(i.dataset.photo).catch(()=>null);if(!u)return;i.dataset.full=u;
+  if(i.dataset.marks){const c=await cutStrip(u,i.dataset.marks).catch(()=>null);if(c){i.src=c;i.classList.add('cut');i._st=lightCache.get(u+i.dataset.marks);return}}
+  i.src=u})).then(()=>markLight(r)).catch(e=>console.error(e))}
 /* Einfacher Foto-Check: zu dunkel, überstrahlt (Blitz/Spiegelung) oder unscharf */
 function photoQuality(src){
   const k=Math.min(1,480/Math.max(src.width,src.height)),w=Math.round(src.width*k),h=Math.round(src.height*k);
