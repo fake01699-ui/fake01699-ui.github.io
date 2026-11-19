@@ -941,9 +941,10 @@ function tcBlock(t){
   if(step){
     const src=t.preview?`src="${t.preview}"`:`data-photo="${esc(t.photo)}"`;
     return `${qw}<div class="f"><span class="lab">Streifen ausrichten</span>
-     <p class="mhint">${step===1?'Tippe auf die <b>Kontrolllinie (C)</b>, die Linie direkt am Griff.':'Tippe jetzt auf die <b>Testlinie (T)</b>. Ist keine zu sehen, tippe auf die Stelle, wo sie wäre.'}</p>
-     <div class="mbox"><img class="mimg" ${src} alt="Foto vom Teststreifen zum Antippen">${(t.marks||[]).map((mk,i)=>`<i class="mk2" style="left:${mk.x*100}%;top:${mk.y*100}%">${i?'T':'C'}</i>`).join('')}</div>
-     <button type="button" class="link" data-a="mcancel">Abbrechen</button>
+     ${!t.mz?`<p class="mhint">Tippe auf den <b>Streifen</b>, ungefähr zwischen die beiden Linien. Dann wird das Bild vergrößert.</p>`:`<p class="mhint">${step===1?'Tippe auf die <b>Kontrolllinie (C)</b>, die Linie direkt am Griff.':'Tippe jetzt auf die <b>Testlinie (T)</b>. Ist keine zu sehen, tippe auf die Stelle, wo sie wäre.'}</p>`}
+     ${(()=>{const z=t.mz||{o:{x:0,y:0},s:1},q=p=>({x:(z.o.x+z.s*(p.x-z.o.x))*100,y:(z.o.y+z.s*(p.y-z.o.y))*100});
+       return `<div class="mbox"><img class="mimg" ${src} style="transform-origin:${z.o.x*100}% ${z.o.y*100}%;transform:scale(${z.s})" alt="Foto vom Teststreifen zum Antippen">${(t.marks||[]).map((mk,i)=>{const r=q(mk);return `<i class="mk2" style="left:${r.x}%;top:${r.y}%">${i?'T':'C'}</i>`}).join('')}</div>`})()}
+     <div class="row" style="justify-content:space-between">${t.mz&&t.mz.s>1?`<button type="button" class="link" data-a="mzoom">Ganzes Foto zeigen</button>`:!t.mz?`<button type="button" class="link" data-a="mzoom">Ohne Vergrößern</button>`:'<span></span>'}<button type="button" class="link" data-a="mcancel">Abbrechen</button></div>
      ${t.merr?`<p class="err" role="alert">${esc(t.merr)}</p>`:''}</div>`;
   }
   return `${qw}<div class="f"><span class="lab">Streifen ausrichten</span>
@@ -959,14 +960,21 @@ async function measureTap(img,ev){
     const cv=document.createElement('canvas');cv.width=img.naturalWidth;cv.height=img.naturalHeight;
     cv.getContext('2d',{willReadFrequently:true}).drawImage(img,0,0);cv.src=img.src;mCanvas=cv;
   }
+  if(!t.mz){ // erst heranzoomen: angetippte Stelle 3-fach vergrößert in die Mitte
+    const S=3,r=1/S,ox=Math.min(1-r,Math.max(0,fx-r/2)),oy=Math.min(1-r,Math.max(0,fy-r/2));
+    t.mz={s:S,o:{x:S*ox/(S-1),y:S*oy/(S-1)}};t.merr='';renderSheet();return;
+  }
   const cv=mCanvas,x=Math.round(fx*cv.width),y=Math.round(fy*cv.height);
   if(t.mstep===1){
     const v=lineAt(cv,x,y,'v'),h=lineAt(cv,x,y,'h'),dir=v.d>=h.d?'v':'h',l=dir==='v'?v:h;
-    if(l.d<12){t.merr='Hier ist keine deutliche Linie. Tippe genau auf die Kontrolllinie.';renderSheet();return}
-    t.mC={d:l.d,dir};t.marks=[dir==='v'?{x:l.pos/cv.width,y:fy}:{x:fx,y:l.pos/cv.height}];t.mstep=2;t.merr='';renderSheet();return;
+    const ok=l.d>=8; // keine deutliche Linie gefunden: angetippte Stelle verwenden
+    t.mC={d:l.d,dir};t.marks=[dir==='v'?{x:(ok?l.pos:x)/cv.width,y:fy}:{x:fx,y:(ok?l.pos:y)/cv.height}];t.mstep=2;t.merr='';renderSheet();return;
   }
-  const l=lineAt(cv,x,y,t.mC.dir);
-  t.marks.push(t.mC.dir==='v'?{x:(l.d<4?x:l.pos)/cv.width,y:fy}:{x:fx,y:(l.d<4?y:l.pos)/cv.height});
+  const l=lineAt(cv,x,y,t.mC.dir),V=t.mC.dir==='v',tap=V?x:y,cp=V?t.marks[0].x*cv.width:t.marks[0].y*cv.height,gap=Math.abs(tap-cp);
+  // nur einrasten, wenn die gefundene Linie nah am Tipp liegt und nicht die C-Linie ist
+  const use=l.d>=4&&Math.abs(l.pos-tap)<=Math.max(2,gap*.35)&&Math.abs(l.pos-cp)>gap*.5;
+  const tp=use?l.pos:tap;
+  t.marks.push(V?{x:tp/cv.width,y:fy}:{x:fx,y:tp/cv.height});
   t.mdir=t.mC.dir;t.mstep=0;t.merr='';
   renderSheet();
 }
@@ -1395,7 +1403,8 @@ const A={
   tkind(e){TF.type=e.dataset.v;if(TF.type==='hcg'&&TF.result==='ungueltig')TF.result=null;TF.mstep=0;renderSheet()},
   edittest(e){const t=S.tests.find(x=>x.id===e.dataset.v);if(!t)return;const back=SHEET&&SHEET.t==='day'?SHEET.date:null;TF={id:t.id,date:t.date,time:t.time||'',result:t.result,photo:t.photo||null,note:t.note||'',ratio:t.ratio??null,measured:!!t.measured,type:t.type||'lh',marks:hasMarks(t)?t.marks:null,mdir:t.mdir||null,back};qdel=null;openSheet({t:'test'})},
   res(e){TF.result=e.dataset.v;TF.err='';renderSheet()},
-  measure(){TF.oldMarks=[TF.marks,TF.mdir];TF.mstep=1;TF.marks=[];TF.merr='';renderSheet()},
+  measure(){TF.oldMarks=[TF.marks,TF.mdir];TF.mstep=1;TF.mz=null;TF.marks=[];TF.merr='';renderSheet()},
+  mzoom(){TF.mz={s:1,o:{x:0,y:0}};TF.mstep=1;TF.marks=[];renderSheet()},
   mcancel(){TF.mstep=0;[TF.marks,TF.mdir]=TF.oldMarks||[null,null];TF.merr='';renderSheet()},
   rmratio(){TF.ratio=null;TF.measured=false;renderSheet()},
   pick(){pickerUntil=Date.now()+5*6e4},
@@ -1474,7 +1483,7 @@ document.addEventListener('input',e=>{
 document.addEventListener('change',async e=>{
   if((e.target.id!=='pf'&&e.target.id!=='pf2')||!e.target.files[0])return;
   pickerUntil=0;
-  try{const blob=await shrink(e.target.files[0]);dropPreview();TF.blob=blob;TF.preview=URL.createObjectURL(blob);TF.qw=blob.q||[];TF.qok=false;TF.marks=null;TF.mdir=null;TF.err='';if(TF.type!=='hcg'){TF.oldMarks=[null,null];TF.mstep=1;TF.marks=[];TF.merr=''}renderSheet()}
+  try{const blob=await shrink(e.target.files[0]);dropPreview();TF.blob=blob;TF.preview=URL.createObjectURL(blob);TF.qw=blob.q||[];TF.qok=false;TF.marks=null;TF.mdir=null;TF.err='';if(TF.type!=='hcg'){TF.oldMarks=[null,null];TF.mstep=1;TF.mz=null;TF.marks=[];TF.merr=''}renderSheet()}
   catch(err){console.error(err);TF.err='Dieses Foto ließ sich nicht öffnen. Wähl ein anderes aus.';renderSheet()}
 });
 const F={
