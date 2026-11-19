@@ -965,17 +965,18 @@ async function measureTap(img,ev){
     t.mz={s:S,o:{x:S*ox/(S-1),y:S*oy/(S-1)}};t.merr='';renderSheet();return;
   }
   const cv=mCanvas,x=Math.round(fx*cv.width),y=Math.round(fy*cv.height);
-  if(t.mstep===1){
-    const v=lineAt(cv,x,y,'v'),h=lineAt(cv,x,y,'h'),dir=v.d>=h.d?'v':'h',l=dir==='v'?v:h;
-    const ok=l.d>=8; // keine deutliche Linie gefunden: angetippte Stelle verwenden
-    t.mC={d:l.d,dir};t.marks=[dir==='v'?{x:(ok?l.pos:x)/cv.width,y:fy}:{x:fx,y:(ok?l.pos:y)/cv.height}];t.mstep=2;t.merr='';renderSheet();return;
+  if(t.mstep===1){ // C: erstmal nur merken, eingerastet wird nach dem T-Tipp
+    t.mraw=[{x,y,fx,fy}];t.marks=[{x:fx,y:fy}];t.mstep=2;t.merr='';renderSheet();return;
   }
-  const l=lineAt(cv,x,y,t.mC.dir),V=t.mC.dir==='v',tap=V?x:y,cp=V?t.marks[0].x*cv.width:t.marks[0].y*cv.height,gap=Math.abs(tap-cp);
-  // nur einrasten, wenn die gefundene Linie nah am Tipp liegt und nicht die C-Linie ist
-  const use=l.d>=4&&Math.abs(l.pos-tap)<=Math.max(2,gap*.35)&&Math.abs(l.pos-cp)>gap*.5;
-  const tp=use?l.pos:tap;
-  t.marks.push(V?{x:tp/cv.width,y:fy}:{x:fx,y:tp/cv.height});
-  t.mdir=t.mC.dir;t.mstep=0;t.merr='';
+  // Richtung aus den beiden Tipps: liegen C und T nebeneinander, sind die Linien senkrecht
+  const C=t.mraw[0],T={x,y,fx,fy},V=Math.abs(C.x-T.x)>=Math.abs(C.y-T.y),dir=V?'v':'h';
+  const gap=V?Math.abs(C.x-T.x):Math.abs(C.y-T.y);
+  if(gap<3){t.merr='C und T liegen zu dicht beieinander. Tippe die beiden Linien bitte nochmal an.';t.mstep=1;t.marks=[];renderSheet();return}
+  const snap=(P,avoid)=>{const tap=V?P.x:P.y,l=lineAt(cv,P.x,P.y,dir);
+    const ok=l.d>=6&&Math.abs(l.pos-tap)<=Math.max(2,gap*.3)&&(avoid==null||Math.abs(l.pos-avoid)>gap*.5);return ok?l.pos:tap};
+  const cp=snap(C,null),tp=snap(T,cp);
+  t.marks=V?[{x:cp/cv.width,y:C.fy},{x:tp/cv.width,y:T.fy}]:[{x:C.fx,y:cp/cv.height},{x:T.fx,y:tp/cv.height}];
+  t.mdir=dir;t.mstep=0;t.merr='';t.mraw=null;
   renderSheet();
 }
 /* ---------- Ansichten ---------- */
