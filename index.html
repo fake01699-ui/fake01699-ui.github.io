@@ -139,6 +139,15 @@ svg.fl{display:block;width:100%;height:auto;overflow:visible}
 .supp+form,.f>p+form{margin-top:10px}
 .folic{display:flex;gap:14px;align-items:center;width:100%;text-align:left;margin-top:18px;background:var(--card);border-radius:24px;padding:14px 18px;min-height:64px}
 .folic b{display:block}
+.folicw{margin-top:18px;background:var(--card);border-radius:24px}
+.folicw .folic{margin-top:0;background:none}
+.fweek{padding:0 14px 12px}
+.fweek>.small{display:block;text-align:center;margin-bottom:6px}
+.fwr{display:flex;justify-content:space-between;gap:4px}
+.fw{flex:1;display:grid;justify-items:center;gap:4px;min-height:52px;padding:2px 0;border-radius:12px}
+.fw small{font-size:12px;color:var(--soft)}
+.fw .tick{width:28px;height:28px;font-size:15px}
+.fw.on .tick{background:linear-gradient(120deg,var(--accent),var(--accent2));box-shadow:none}
 .folic .small{display:block}
 .tick{width:30px;height:30px;flex:none;border-radius:50%;box-shadow:inset 0 0 0 2px var(--accent);display:grid;place-items:center;color:#fff;font-weight:700;font-size:17px;transition:background .15s}
 .folic.on .tick{background:linear-gradient(120deg,var(--accent),var(--accent2));box-shadow:none}
@@ -1128,6 +1137,7 @@ function shDay({date}){
   <div class="f"><span class="lab">Zervixschleim</span>${seg(MUCUS.map(x=>[x,x]),d.mucus||'','mucus')}</div>
   <div class="f"><span class="lab">Beschwerden und Stimmung</span><div class="seg">${SYM.map(x=>`<button type="button" data-a="sym" data-v="${esc(x)}" aria-pressed="${(d.symptoms||[]).includes(x)}">${esc(x)}</button>`).join('')}</div></div>
   <div class="f"><span class="lab">Sex</span>${seg([['','Nein'],['1','Ja']],d.sex?'1':'','sex')}</div>
+  <div class="f"><span class="lab">Folsäure genommen</span>${seg([['','Nein'],['1','Ja']],d.folic?'1':'','folicset')}</div>
   <label class="f"><span>Basaltemperatur in °C</span><input type="number" inputmode="decimal" step="0.01" min="34" max="42" data-i="temp" value="${esc(d.temp||'')}"></label>
   <label class="f"><span>Notiz</span><textarea data-i="note">${esc(d.note||'')}</textarea></label>`;
 }
@@ -1204,7 +1214,10 @@ function folicStreak(){
 }
 function folicCard(){
   const on=!!(S.days[todayS()]||{}).folic,k=folicStreak();
-  return `<button class="folic ${on?'on':''}" data-a="folic" aria-pressed="${on}"><span class="tick" aria-hidden="true">${on?'✓':''}</span><span><b>${on?'Folsäure genommen':'Folsäure heute genommen?'}</b><span class="muted small">${k?`${k} ${k===1?'Tag':'Tage'} in Folge`:'Tippen zum Abhaken'}</span></span></button>`;
+  const T=num(todayS()),WD=['So','Mo','Di','Mi','Do','Fr','Sa'],wk=[];
+  for(let n=T-6;n<T;n++){const ds=str(n),dn=!!(S.days[ds]||{}).folic;wk.push(`<button class="fw ${dn?'on':''}" data-a="folicd" data-v="${ds}" aria-pressed="${dn}" aria-label="Folsäure am ${esc(f(n))} ${dn?'genommen, tippen zum Entfernen':'nachtragen'}"><small>${n===T-1?'Gestern':WD[new Date(ds+'T12:00').getDay()]}</small><span class="tick" aria-hidden="true">${dn?'✓':''}</span></button>`)}
+  return `<div class="folicw"><button class="folic ${on?'on':''}" data-a="folic" aria-pressed="${on}"><span class="tick" aria-hidden="true">${on?'✓':''}</span><span><b>${on?'Folsäure genommen':'Folsäure heute genommen?'}</b><span class="muted small">${k?`${k} ${k===1?'Tag':'Tage'} in Folge`:'Tippen zum Abhaken'}</span></span></button>
+  <div class="fweek"><span class="muted small">Vergessen? Tippe auf den Tag zum Nachtragen</span><div class="fwr">${wk.join('')}</div></div></div>`;
 }
 function tipCard(m){
   const cur=m.cur?dayPhase(m,m.cur,m.T).p:null;
@@ -1431,6 +1444,8 @@ const A={
   msupdel(e){S.supps=(S.supps||[]).filter(x=>x.id!==e.dataset.v);persist();renderApp()},
   setrole(e){setupRole=e.dataset.v;renderSetup()},
   folic(){const t=todayS(),d=dayOf(t);d.folic=!d.folic;prune(t);persist();renderApp()},
+  folicd(e){const t=e.dataset.v;if(num(t)>num(todayS()))return;const d=dayOf(t);d.folic=!d.folic;prune(t);persist();renderApp()},
+  folicset(e){const d=dayOf(SHEET.date);d.folic=e.dataset.v==='1';prune(SHEET.date);persist();renderSheet()},
   doc(){openSheet({t:'doc'})},
   print(){window.print()},
   skipinstall(){skipInstall=true;renderSetup()},
